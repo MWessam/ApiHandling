@@ -5,7 +5,6 @@
     "description": "Handle api and errors gracefully.",
     "dependencies": 
     {
-        "com.cysharp.unitask": "https://github.com/Cysharp/UniTask.git?path=Assets/UniTask#2.3.4"
     }
   }
   
