@@ -1,0 +1,11 @@
+{
+    "name": "com.mwessam.apihandler",
+    "version": "1.0.0",
+    "displayName": "Api Handler",
+    "description": "Handle api and errors gracefully.",
+    "dependencies": 
+    {
+        "com.cysharp.unitask": "https://github.com/Cysharp/UniTask.git?path=Assets/UniTask#2.3.4"
+    }
+  }
+  
