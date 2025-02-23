@@ -2,7 +2,7 @@
     "name": "ApiHandling",
     "rootNamespace": "",
     "references": [
-        "GUID:f51ebe6a0ceec4240a699833d6309b23",
+        "GUID:a1561d790a56015469d4ee61b4c1f33e",
         "GUID:939445d3ad114cbda4926e5754bf27db"
     ],
     "includePlatforms": [],
