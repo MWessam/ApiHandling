@@ -1,6 +1,6 @@
 {
     "name": "com.mwessam.apihandler",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "displayName": "Api Handler",
     "description": "Handle api and errors gracefully.",
     "dependencies": 
