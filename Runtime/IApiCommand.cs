@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 
@@ -9,7 +10,7 @@ namespace ApiHandling.Runtime
     }
     public abstract class BaseApiCommand<T> : IFetchCommand<T>
     {
-        public abstract UniTask<Result<T>> FetchAsync(CancellationToken token = default);
+        public abstract Cysharp.Threading.Tasks.UniTask<Result<T>> FetchAsync(CancellationToken token = default);
         public async UniTask<Result> Execute(CancellationToken cancellationToken = default)
         {
             return (await FetchAsync()).ToResult();

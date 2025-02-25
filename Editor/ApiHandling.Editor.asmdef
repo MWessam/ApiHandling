@@ -1,11 +1,10 @@
 {
-    "name": "ApiHandling",
+    "name": "ApiHandling.Editor",
     "rootNamespace": "",
-    "references": [
-        "GUID:939445d3ad114cbda4926e5754bf27db",
-        "GUID:a1561d790a56015469d4ee61b4c1f33e"
+    "references": [],
+    "includePlatforms": [
+        "Editor"
     ],
-    "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,

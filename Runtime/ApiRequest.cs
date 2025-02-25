@@ -49,7 +49,7 @@ namespace ApiHandling.Runtime
             return await SendRequest(request, cancellationToken);
         }
 
-        public async UniTask<Result<string>> PostRequest(string path, string requestBody, CancellationToken cancellationToken = default)
+        public async UniTask<Result<string>> PostRequest(string path, string requestBody = "", CancellationToken cancellationToken = default)
         {
             var request = new UnityWebRequest(Url(path), "POST");
             byte[] bodyRaw = Encoding.UTF8.GetBytes(requestBody);

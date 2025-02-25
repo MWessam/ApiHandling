@@ -9,6 +9,7 @@ namespace ApiHandling.Runtime
         private Action<T> _onSuccess;
         private Action<ErrorMessage> _onFailure;
         private IFetchCommand<T> _fetchCommand;
+        private CancellationToken _token = default;
         public bool IsErrorLocalized { get; private set; } = false;
         internal ApiCommandChain(IFetchCommand<T> fetchCommand)
         {
@@ -32,9 +33,9 @@ namespace ApiHandling.Runtime
             return this;
         }
 
-        public async UniTask<Result<T>> Fetch(CancellationToken cancellationToken = default)
+        public async UniTask<Result<T>> Fetch()
         {
-            var result = await _fetchCommand.FetchAsync(cancellationToken);
+            var result = await _fetchCommand.FetchAsync(_token);
             if (!result.IsSuccess)
             {
                 if (!IsErrorLocalized)
@@ -46,6 +47,12 @@ namespace ApiHandling.Runtime
             }
             _onSuccess?.Invoke(result.Value);
             return result;
+        }
+
+        public ApiCommandChain<T> SetCancellationToken(CancellationToken token = default)
+        {
+            _token = token;
+            return this;
         }
     }
 }

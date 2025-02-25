@@ -16,6 +16,14 @@ namespace ApiHandling.Runtime
         public static Result Success() => new();
         public static Result Failure(EResultError errorCode, string errorMessage) =>
             new Result(errorCode, errorMessage);
+        public Result<Void> ToVoidResult()
+        {
+            return IsSuccess ? Result<Void>.Success(new Void()) : Result<Void>.Failure(Error);
+        }
+        public static implicit operator Result<Void> (Result result)
+        {
+            return result.ToVoidResult();
+        }
     }
     public readonly struct Result<T>
     {
@@ -61,6 +69,19 @@ namespace ApiHandling.Runtime
         {
             return _result;
         }
+        public Result<Void> ToVoidResult()
+        {
+            return IsSuccess ? Result<Void>.Success(new Void()) : Result<Void>.Failure(ErrorCode, Error);
+        }
+        public static implicit operator Result<Void> (Result<T> result)
+        {
+            return result.ToVoidResult();
+        }
+    }
+
+    public readonly struct Void
+    {
+        
     }
 
     public struct ErrorMessage
