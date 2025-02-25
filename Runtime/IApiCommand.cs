@@ -13,7 +13,7 @@ namespace ApiHandling.Runtime
         public abstract Cysharp.Threading.Tasks.UniTask<Result<T>> FetchAsync(CancellationToken token = default);
         public async UniTask<Result> Execute(CancellationToken cancellationToken = default)
         {
-            return (await FetchAsync()).ToResult();
+            return (await FetchAsync(cancellationToken)).ToResult();
         }
     }
 }

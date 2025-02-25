@@ -140,6 +140,13 @@ namespace BalootApi
         [JsonProperty("user_id")]
         public int UserId { get; set; }
     }
+    public struct PostCreationDTO
+    {
+        [JsonProperty("user_id")]
+        public int UserId { get; set; }
+        [JsonProperty("content")]
+        public string Content { get; set; }
+    }
 
     #endregion
     

@@ -17,6 +17,7 @@ namespace BalootApi
 
     public interface IApiHandler
     {
+        UniTask<Result<User>> GetUser(string userId, CancellationToken token = default);
         UniTask<Result<Void>> SendFriendRequest(User user, CancellationToken token = default);
         UniTask<Result<Void>> AcceptFriendRequest(User user, CancellationToken token = default);
         UniTask<Result<Void>> FollowUser(User user, CancellationToken token = default);
@@ -27,6 +28,11 @@ namespace BalootApi
         UniTask<Result<Void>> UpdateProfilePicture(Texture picture, CancellationToken token = default);
         UniTask<Result<Void>> UpdateStatus(string status, CancellationToken token = default);
         
+        UniTask<Result<Void>> UpdateSelectedItem();
+        UniTask<Result<Void>> UpdateSelectedItems();
+        UniTask<Result<List<Item>>> GetUserSelectedItems();
+        
+        
         
         UniTask<Result<Inventory>> GetInventory(CancellationToken token = default);
         UniTask<Result<Void>> PurchaseItem(Item item, CancellationToken token = default);
@@ -34,17 +40,21 @@ namespace BalootApi
         
         UniTask<Result<List<BaseNotification>>> GetNotifications(int page = 0, int pageSize = 30, CancellationToken token = default);
         UniTask<Result<Void>> MarkNotificationAsRead(BaseNotification notification, CancellationToken token = default);
-        UniTask<Result<Comment>> LikeComment(Comment comment, CancellationToken token = default);
+        UniTask<Result<Void>> LikeComment(Comment comment, CancellationToken token = default);
 
         UniTask<Result<IEnumerable<ChatMessageEntity>>> GetChatPage(User receiver, int startIndex = 0,
             int pageSize = 10, CancellationToken token = default);
+        UniTask<Result<Void>> SendChatMessage(User receiver, string message);
+
 
         UniTask<Result<IEnumerable<Post>>> GetUserFeed(int startIndex = 0, int pageSize = 10, CancellationToken token = default);
-        UniTask<Result<Post>> CreatePost(string content, EPostType postType, CancellationToken token = default);
+        UniTask<Result<IEnumerable<Post>>> GetPostsByUser(User user, int startIndex = 0, int pageSize = 10, CancellationToken token = default);
+        UniTask<Result<Void>> CreatePost(string content, EPostType postType, CancellationToken token = default);
         UniTask<Result<Void>> HidePost(Post post, CancellationToken token = default);
-        UniTask<Result<Post>> LikePost(Post post, CancellationToken token = default);
+        UniTask<Result<Void>> LikePost(Post post, CancellationToken token = default);
         UniTask<Result<IEnumerable<Post>>> GetPostsLikedByUser(int pageStart = 0, int pageSize = 10, CancellationToken token = default);
-        UniTask<Result<Comment>> CommentOnPost(Post post, string commentContent, CancellationToken token = default);
+        UniTask<Result<Void>> CommentOnPost(Post post, string commentContent, CancellationToken token = default);
+        
     }
 
     public abstract class BaseBalootApiCommand<T> : BaseApiCommand<T>
@@ -57,7 +67,44 @@ namespace BalootApi
     { 
         private User _signedInUser;
         private ApiRequest _apiRequest;
-        [GenerateApiCommand]
+        
+        // A cache for users, keyed by userId.
+        private readonly Dictionary<string, (User user, DateTime cachedAt)> _userCache = new();
+
+        // Cache expiration time for users (e.g., 10 minutes)
+        private readonly TimeSpan _userCacheExpiration = TimeSpan.FromMinutes(10);
+
+        // Optionally, you can also cache posts for a user. This key might combine userId and pagination.
+        private readonly Dictionary<string, (IEnumerable<Post> posts, DateTime cachedAt)> _postsCache = new();
+
+        // Cache expiration time for posts (e.g., 5 minutes)
+        private readonly TimeSpan _postsCacheExpiration = TimeSpan.FromMinutes(5);
+        
+        public async UniTask<Result<User>> GetUser(string userId, CancellationToken token = default)
+        {
+            // Check if the user is already in the cache and still valid
+            if (_userCache.TryGetValue(userId, out var cacheEntry))
+            {
+                if (DateTime.UtcNow - cacheEntry.cachedAt < _userCacheExpiration)
+                {
+                    return Result<User>.Success(cacheEntry.user);
+                }
+                else
+                {
+                    // Optionally remove expired entry
+                    _userCache.Remove(userId);
+                }
+            }
+            var response = await _apiRequest.GetRequest($"user/{userId}", token);
+            if (response.IsSuccess)
+            {
+                var userDto = JsonConvert.DeserializeObject<UserDTO>(response.Value);
+                var user = userDto.Adapt<User>();
+                _userCache[userId] = (user, DateTime.UtcNow);
+                return Result<User>.Success(user);
+            }
+            return Result<User>.Failure(response.ErrorMessage);
+        }
         public async UniTask<Result<Void>> SendFriendRequest(User user, CancellationToken token = default)
         {
             var json = JsonConvert.SerializeObject(new SendFriendRequestDto(_signedInUser.Id, user.Id));
@@ -83,7 +130,8 @@ namespace BalootApi
 
         public async UniTask<Result<Void>> RemoveFriend(User user, CancellationToken token = default)
         {
-            throw new NotImplementedException();
+            var result = await _apiRequest.DeleteRequest($"friends/unfriend/{_signedInUser.Id}/{user.Id}");
+            return result;
         }
 
         public async UniTask<Result<Void>> BlockUser(User user, CancellationToken token = default)
@@ -108,6 +156,28 @@ namespace BalootApi
             var statusFormItem = new FormItem("status", status, EFormItemType.StringValue);
             var result = await _apiRequest.PatchRequestForm($"users/{_signedInUser.Id}", token, statusFormItem);
             return result.ToResult();
+        }
+
+        public async UniTask<Result<Void>> UpdateSelectedItem()
+        {
+            throw new NotImplementedException();
+        }
+
+        public async UniTask<Result<Void>> UpdateSelectedItems()
+        {
+            throw new NotImplementedException();
+        }
+
+        public async UniTask<Result<List<Item>>> GetUserSelectedItems()
+        {
+            var response = await _apiRequest.GetRequest($"player-selected-items/player/{_signedInUser.Id}");
+            if (response.IsSuccess)
+            {
+                var itemDtos = JsonConvert.DeserializeObject<List<ItemDTO>>(response.Value);
+                var items = itemDtos.Adapt<List<Item>>();
+                return Result<List<Item>>.Success(items);
+            }
+            return Result<List<Item>>.Failure(response.ErrorMessage);
         }
 
         public async UniTask<Result<Inventory>> GetInventory(CancellationToken token = default)
@@ -175,7 +245,7 @@ namespace BalootApi
             throw new NotImplementedException();
         }
 
-        public async UniTask<Result<Comment>> LikeComment(Comment comment, CancellationToken token = default)
+        public async UniTask<Result<Void>> LikeComment(Comment comment, CancellationToken token = default)
         {
             var result = await _apiRequest.PostRequest($"comments/{comment.Id}/like/{_signedInUser.Id}", cancellationToken:token);
             if (result.IsSuccess)
@@ -205,24 +275,71 @@ namespace BalootApi
             return Result<IEnumerable<ChatMessageEntity>>.Failure(result.ErrorMessage);
         }
 
+        public async UniTask<Result<Void>> SendChatMessage(User receiver, string message)
+        {
+            var messageDto = new ChatMessageDTO()
+            {
+                Content = message,
+                User1Id = _signedInUser.Id,
+                User2Id = receiver.Id
+            };
+            var result = await _apiRequest.PostRequest($"message", JsonConvert.SerializeObject(messageDto));
+            return result.ToVoidResult();
+        }
+
         public async UniTask<Result<IEnumerable<Post>>> GetUserFeed(int startIndex = 0, int pageSize = 10, CancellationToken token = default)
         {
             throw new NotImplementedException();
         }
 
-        public async UniTask<Result<Post>> CreatePost(string content, EPostType postType, CancellationToken token = default)
+        public async UniTask<Result<IEnumerable<Post>>> GetPostsByUser(User user, int startIndex = 0, int pageSize = 10, CancellationToken token = default)
         {
-            throw new NotImplementedException();
+            var response = await _apiRequest.GetRequest($"posts/user/{user.Id}?page={startIndex}&page_size={pageSize}", token);
+            if (response.IsSuccess)
+            {
+                var postDtos = JsonConvert.DeserializeObject<List<PostDTO>>(response.Value);
+                var postEntities = postDtos.Adapt<List<Post>>();
+                for (var i = 0; i < postEntities.Count; i++)
+                {
+                    var postDto = postDtos[i];
+                    var post = postEntities[i];
+                    
+                }
+
+                return Result<IEnumerable<Post>>.Success(postEntities);
+            }
+            return Result<IEnumerable<Post>>.Failure(response.ErrorMessage);
+        }
+
+        public async UniTask<Result<Void>> CreatePost(string content, EPostType postType, CancellationToken token = default)
+        {
+            var postCreationDto = new PostCreationDTO
+            {
+                Content = content,
+                UserId = _signedInUser.Id,
+            };
+            if (postType == EPostType.Normal)
+            {
+                var postResult = await _apiRequest.PostRequest($"posts", JsonConvert.SerializeObject(postCreationDto), token);
+                return postResult;
+            }
+            else
+            {
+                var postResult = await _apiRequest.PostRequest($"posts/golden", JsonConvert.SerializeObject(postCreationDto), token);
+                return postResult;
+            }
         }
 
         public async UniTask<Result<Void>> HidePost(Post post, CancellationToken token = default)
         {
-            throw new NotImplementedException();
+            var result = await _apiRequest.PostRequest($"posts/{post.Id}/hide/{_signedInUser.Id}", "", token);
+            return result;
         }
 
-        public async UniTask<Result<Post>> LikePost(Post post, CancellationToken token = default)
+        public async UniTask<Result<Void>> LikePost(Post post, CancellationToken token = default)
         {
-            throw new NotImplementedException();
+            var result = await _apiRequest.PostRequest($"posts/{post.Id}/like/{_signedInUser.Id}", "", token);
+            return result;
         }
 
         public async UniTask<Result<IEnumerable<Post>>> GetPostsLikedByUser(int pageStart = 0, int pageSize = 10, CancellationToken token = default)
@@ -230,9 +347,16 @@ namespace BalootApi
             throw new NotImplementedException();
         }
 
-        public async UniTask<Result<Comment>> CommentOnPost(Post post, string commentContent, CancellationToken token = default)
+        public async UniTask<Result<Void>> CommentOnPost(Post post, string commentContent,
+            CancellationToken token = default)
         {
-            throw new NotImplementedException();
+            var postCreationDto = new PostCreationDTO
+            {
+                Content = commentContent,
+                UserId = _signedInUser.Id,
+            };
+            var result = await _apiRequest.PostRequest($"posts/{post.Id}/comment", JsonConvert.SerializeObject(postCreationDto), token);
+            return result;
         }
     }
 

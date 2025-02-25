@@ -4,7 +4,14 @@ using Cysharp.Threading.Tasks;
 
 namespace ApiHandling.Runtime
 {
-    public class ApiCommandChain<T>
+    public class ApiCommandChain
+    {
+        public virtual async UniTask<Result> Execute()
+        {
+            return Result.Success();
+        }
+    }
+    public class ApiCommandChain<T> : ApiCommandChain
     {
         private Action<T> _onSuccess;
         private Action<ErrorMessage> _onFailure;
@@ -49,7 +56,12 @@ namespace ApiHandling.Runtime
             return result;
         }
 
-        public ApiCommandChain<T> SetCancellationToken(CancellationToken token = default)
+        public override async UniTask<Result> Execute()
+        {
+            return (await Fetch()).ToResult();
+        }
+
+        internal ApiCommandChain<T> SetCancellationToken(CancellationToken token = default)
         {
             _token = token;
             return this;
