@@ -6,14 +6,13 @@ namespace ApiHandling.Runtime
     {
         public ErrorMessage Error { get; }
         public bool IsSuccess { get; }
-
         private Result(EResultError errorType = EResultError.None, string errorMessage = "")
         {
             // E = errorCode;
             Error = new(errorMessage, errorType);
             IsSuccess = errorType == EResultError.None ? true : false;
         }
-        public static Result Success() => new();
+        public static Result Success() => new Result(EResultError.None, "");
         public static Result Failure(EResultError errorCode, string errorMessage) =>
             new Result(errorCode, errorMessage);
         public Result<Void> ToVoidResult()
@@ -77,6 +76,10 @@ namespace ApiHandling.Runtime
         {
             return result.ToVoidResult();
         }
+        public static implicit operator bool (Result<T> result)
+        {
+            return result.IsSuccess;
+        }
     }
 
     public readonly struct Void
@@ -103,6 +106,11 @@ namespace ApiHandling.Runtime
         Unauthorized,
         Timeout,
         // Add more error types as needed
-        ProtocolError
+        ProtocolError,
+        ParsingError,
+        PartialSuccess,
+        ServerError,
+        Unknown,
+        MaxRetryLimit
     }
 }

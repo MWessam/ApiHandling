@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using ApiHandling.Generated.Facade;
 using Cysharp.Threading.Tasks;
 
 namespace ApiHandling.Runtime
@@ -17,6 +18,8 @@ namespace ApiHandling.Runtime
         private Action<ErrorMessage> _onFailure;
         private IFetchCommand<T> _fetchCommand;
         private CancellationToken _token = default;
+        private int _timeout = 0;
+        private int _retryCount;
         public bool IsErrorLocalized { get; private set; } = false;
         internal ApiCommandChain(IFetchCommand<T> fetchCommand)
         {
@@ -39,10 +42,40 @@ namespace ApiHandling.Runtime
             _onFailure = action;
             return this;
         }
+        public ApiCommandChain<T> SetTimeout(int timeout)
+        {
+            _timeout = timeout;
+            return this;
+        }
+        public ApiCommandChain<T> SetRetryCount(int retryCount)
+        {
+            _retryCount = retryCount;
+            return this;
+        }
 
         public async UniTask<Result<T>> Fetch()
         {
-            var result = await _fetchCommand.FetchAsync(_token);
+            Result<T> result = Result<T>.Failure(EResultError.NotFound, "Couldn't invoke fetch command.");
+            
+            if (_retryCount == 0)
+            {
+                result = await _fetchCommand.FetchAsync(_token);
+            }
+            else
+            {
+                var timesRetried = 0;
+                bool shouldRetry = timesRetried < _retryCount;
+                while (shouldRetry)
+                {
+                    result = await _fetchCommand.FetchAsync(_token);
+                    if (result.IsSuccess)
+                    {
+                        break;
+                    }
+                    timesRetried++;
+                }
+            }
+            
             if (!result.IsSuccess)
             {
                 if (!IsErrorLocalized)

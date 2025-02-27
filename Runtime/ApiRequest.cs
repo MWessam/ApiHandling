@@ -5,12 +5,13 @@ using System.Threading.Tasks;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Networking;
+using VContainer;
 
 namespace ApiHandling.Runtime
 {
     public class ApiRequest : MonoBehaviour
     {
-        [SerializeField] private ApiConfigSO _apiConfig;
+        [Inject] private ApiConfigSO _apiConfig;
         private int _timeoutMs = 5000;
 
         private string Url(string path) => $"{_apiConfig.ApiUrl}/{path}";
@@ -31,6 +32,10 @@ namespace ApiHandling.Runtime
                 catch (TimeoutException)
                 {
                     return Result<string>.Failure(EResultError.Timeout, "Request timed out.");
+                }
+                catch (Exception e)
+                {
+                    return Result<string>.Failure(EResultError.Unknown, "Unknown error occurred. Error message: " + e.Message);
                 }
 
                 if (request.result == UnityWebRequest.Result.ConnectionError ||
@@ -127,11 +132,6 @@ namespace ApiHandling.Runtime
 
             return await SendRequest(request, cancellationToken);
         }
-    }
-
-    internal class ApiConfigSO
-    {
-        public string ApiUrl { get; set; }
     }
 
     public class FormItem

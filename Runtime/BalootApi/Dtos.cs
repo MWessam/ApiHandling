@@ -1,27 +1,123 @@
 ﻿using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 namespace BalootApi
 {
     #region User
 
     [Serializable]
-    public struct UserDTO
+    public struct UserDto
     {
-        [JsonProperty("id")] public int Id { get; set; }
-        [JsonProperty("name")] public string Name { get; set; }
-        [JsonProperty("points")] public int Points { get; set; }
-        [JsonProperty("won_matches_count")] public int WonMatchesCount { get; set; }
-        [JsonProperty("lost_matches_count")] public int LostMatchesCount { get; set; }
-        [JsonProperty("rank")] public int Rank { get; set; }
-        [JsonProperty("balance")] public int Balance { get; set; }
-        [JsonProperty("highest_reached_rank")] public int HighestRankReached { get; set; }
-        [JsonProperty("status")] public string Status;
-        [JsonProperty("photo_url")] public string PhotoUrl;
+        [JsonProperty("id")]
+        public int Id { get; set; }
+        
+        [JsonProperty("name")]
+        public string Name { get; set; }
+        
+        // Consider using a decimal/double if needed since JSON returns "100.00"
+        [JsonProperty("points")]
+        public float Points { get; set; }
+        
+        [JsonProperty("played_matches_count")]
+        public int PlayedMatchesCount { get; set; }
+        
+        [JsonProperty("won_matches_count")]
+        public int WonMatchesCount { get; set; }
+        
+        [JsonProperty("lost_matches_count")]
+        public int LostMatchesCount { get; set; }
+        
+        [JsonProperty("ranked_matches_count")]
+        public int RankedMatchesCount { get; set; }
+        
+        // Mapping player_rank from JSON to this property
+        [JsonProperty("player_rank")]
+        public int PlayerRank { get; set; }
+        
+        [JsonProperty("highest_reached_rank")]
+        public int HighestRankReached { get; set; }
+        
+        // Consider using a decimal/double if needed since JSON returns "1000.00"
+        [JsonProperty("balance")]
+        public float Balance { get; set; }
+        
+        [JsonProperty("vip_status")]
+        public bool VipStatus { get; set; }
+        
+        [JsonProperty("availability_for_dm")]
+        public bool AvailabilityForDm { get; set; }
+        
+        [JsonProperty("unique_credential_hash")]
+        public string UniqueCredentialHash { get; set; }
+        
+        [JsonProperty("status")]
+        public string Status { get; set; }
+        
+        [JsonProperty("is_game_manager")]
+        public bool IsGameManager { get; set; }
+        
+        [JsonProperty("cover_photo_id")]
+        public int CoverPhotoId { get; set; }
+        
+        [JsonProperty("is_anonymous")]
+        public bool IsAnonymous { get; set; }
+        
+        [JsonProperty("user_handle")]
+        public string UserHandle { get; set; }
+        
+        [JsonProperty("is_male")]
+        public bool IsMale { get; set; }
+        
+        [JsonProperty("facebook_profile_link")]
+        public string FacebookProfileLink { get; set; }
+        
+        [JsonProperty("x_profile_link")]
+        public string XProfileLink { get; set; }
+        
+        [JsonProperty("snapchat_profile_link")]
+        public string SnapchatProfileLink { get; set; }
+        
+        [JsonProperty("instagram_profile_link")]
+        public string InstagramProfileLink { get; set; }
+        
+        [JsonProperty("threads_profile_link")]
+        public string ThreadsProfileLink { get; set; }
+        
+        [JsonProperty("bluesky_profile_link")]
+        public string BlueskyProfileLink { get; set; }
+        
+        [JsonProperty("reddit_profile_link")]
+        public string RedditProfileLink { get; set; }
+        
+        [JsonProperty("discord_handle")]
+        public string DiscordHandle { get; set; }
+        
+        [JsonProperty("linkedin_profile_link")]
+        public string LinkedinProfileLink { get; set; }
+        
+        [JsonProperty("youtube_channel_link")]
+        public string YoutubeChannelLink { get; set; }
+        
+        [JsonProperty("whatsapp_number")]
+        public string WhatsappNumber { get; set; }
+        
+        [JsonProperty("created_at")]
+        public DateTime CreatedAt { get; set; }
+        
+        [JsonProperty("updated_at")]
+        public DateTime UpdatedAt { get; set; }
+        
+        [JsonProperty("followers_count")]
+        public int FollowersCount { get; set; }
+        
+        // This property is in your existing DTO though not found in the JSON sample.
+        [JsonProperty("photo_url")]
+        public string PhotoUrl { get; set; }
     }
     [Serializable]
-    public struct ProfilePictureDTO
+    public struct ProfilePictureDto
     {
     }
     [Serializable]
@@ -44,22 +140,22 @@ namespace BalootApi
     #region Items
 
     [Serializable]
-    public struct ItemDTO
+    public struct ItemDto
     {
         public int Id;
         public int Price;
     }
     [Serializable]
-    public struct InventoryDTO
+    public struct InventoryDto
     {
     }
     [Serializable]
-    public struct ItemPurchaseDTO
+    public struct ItemPurchaseDto
     {
         public int Quantity { get; set; }
 
         public int ItemId { get; set; }
-        public ItemPurchaseDTO(int itemId, int quantity)
+        public ItemPurchaseDto(int itemId, int quantity)
         {
             ItemId = itemId;
             Quantity = quantity;
@@ -71,7 +167,7 @@ namespace BalootApi
 
     #region Chat
 
-    public struct ChatMessageDTO
+    public struct ChatMessageDto
     {
         [JsonProperty("id")] public int Id;
         [JsonProperty("content")] public string Content;
@@ -84,11 +180,11 @@ namespace BalootApi
     #region Notifications
 
     [Serializable]
-    public struct NotificationsDTO
+    public struct NotificationsDto
     {
     }
     [Serializable]
-    public class NotificationDTO
+    public class NotificationDto
     {
         [JsonProperty("id")]
         public int Id;
@@ -107,7 +203,7 @@ namespace BalootApi
 
     #region Comments
 
-    public struct CommentDTO
+    public struct CommentDto
     {
         [JsonProperty("id")]
         public int Id;
@@ -123,7 +219,7 @@ namespace BalootApi
 
     #region Posts
 
-    public struct PostDTO
+    public struct PostDto
     {
         [JsonProperty("id")]
         public int Id { get; set; }
@@ -136,7 +232,7 @@ namespace BalootApi
         [JsonProperty("isLikedByUser")]
         public bool IsLiked { get; set; }
         [JsonProperty("comments")]
-        public List<CommentDTO> Comments { get; set; }
+        public List<CommentDto> Comments { get; set; }
         [JsonProperty("user_id")]
         public int UserId { get; set; }
     }
@@ -149,5 +245,37 @@ namespace BalootApi
     }
 
     #endregion
-    
+
+    #region Rooms
+    [JsonObject(NamingStrategyType = typeof(SnakeCaseNamingStrategy))]
+    public struct RoomDto
+    {
+        public string Name;
+        public int MaxMemberCount;
+        public bool IsPrivate;
+        public int Lifetime;
+        public int Logo;
+        public int OwnerId;
+    }
+    #endregion
+
+    #region Tournament
+
+    [JsonObject(NamingStrategyType = typeof(SnakeCaseNamingStrategy))]
+    public struct TournamentDto
+    {
+        public int Id;
+        public int Lifetime;
+        public int MaxWinnersCount;
+        public List<int> WinnerIds;
+    }
+    [JsonObject(NamingStrategyType = typeof(SnakeCaseNamingStrategy))]
+    public struct TournamentCreationDto
+    {
+        public int Lifetime;
+        public int MaxWinnersCount;
+    }
+
+
+    #endregion
 }
