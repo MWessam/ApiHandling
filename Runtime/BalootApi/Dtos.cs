@@ -140,16 +140,44 @@ namespace BalootApi
     #region Items
 
     [Serializable]
+    [JsonObject(NamingStrategyType = typeof(SnakeCaseNamingStrategy))]
     public struct ItemDto
     {
         public int Id;
+        [JsonConverter(typeof(StringToIntConverter))]
         public int Price;
+        public int Quantity;
     }
+    [Serializable]
+    [JsonObject(NamingStrategyType = typeof(SnakeCaseNamingStrategy))]
+    public struct InventoryItemDto
+    {
+        public int ItemId;
+        public int Price;
+        public int Quantity;
+        public ItemDto Item;
+    }
+
+    [JsonObject(NamingStrategyType = typeof(SnakeCaseNamingStrategy))]
+    [Serializable]
+    public struct SelectedItemsDto
+    {
+        public ItemDto Item;
+    }
+
     [Serializable]
     public struct InventoryDto
     {
     }
+
     [Serializable]
+    [JsonObject(NamingStrategyType = typeof(SnakeCaseNamingStrategy))]
+    public struct ArrayDto<T>
+    {
+        public List<T> Data;
+    }
+    [Serializable]
+    [JsonObject(NamingStrategyType = typeof(SnakeCaseNamingStrategy))]
     public struct ItemPurchaseDto
     {
         public int Quantity { get; set; }
@@ -161,7 +189,19 @@ namespace BalootApi
             Quantity = quantity;
         }
     }
+    [Serializable]
+    [JsonObject(NamingStrategyType = typeof(SnakeCaseNamingStrategy))]
+    public struct ItemSelectDto
+    {
+        public int UserId { get; set; }
 
+        public int ItemId { get; set; }
+        public ItemSelectDto(int userId, int itemId)
+        {
+            UserId = userId;
+            ItemId = itemId;
+        }
+    }
 
     #endregion
 
@@ -184,7 +224,7 @@ namespace BalootApi
     {
     }
     [Serializable]
-    public class NotificationDto
+    public struct NotificationDto
     {
         [JsonProperty("id")]
         public int Id;
@@ -193,7 +233,7 @@ namespace BalootApi
         [JsonProperty("receiver_id")]
         public int ReceiverId;
         [JsonProperty("type")]
-        public ENotificationType Type;
+        public string Type;
         [JsonProperty("content")]
         public string Content;
 

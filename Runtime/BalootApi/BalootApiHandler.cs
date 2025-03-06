@@ -2,18 +2,17 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using ApiHandling.Runtime;
 using ApiHandling.Runtime.Utilities;
 using Cysharp.Threading.Tasks;
 using Mapster;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using UnityEngine;
 using VContainer;
 using VContainer.Unity;
 using Void = ApiHandling.Runtime.Void;
-
-// using VContainer;
-
 namespace BalootApi
 {
 
@@ -30,21 +29,22 @@ namespace BalootApi
         UniTask<Result<Void>> UpdateProfilePicture(Texture picture, CancellationToken token = default);
         UniTask<Result<Void>> UpdateStatus(string status, CancellationToken token = default);
         
-        UniTask<Result<Void>> UpdateSelectedItem(CancellationToken token = default);
-        UniTask<Result<Void>> UpdateSelectedItems(CancellationToken token = default);
+        UniTask<Result<Void>> SelectItem(Item item, CancellationToken token = default);
         UniTask<Result<List<Item>>> GetUserSelectedItems(CancellationToken token = default);
         
         
         
-        UniTask<Result<Inventory>> GetInventory(CancellationToken token = default);
+        UniTask<Result<List<Item>>> GetInventory(CancellationToken token = default);
         UniTask<Result<Void>> PurchaseItem(Item item, CancellationToken token = default);
         UniTask<Result<List<Item>>> GetUserStore(CancellationToken token = default);
         
         UniTask<Result<List<BaseNotification>>> GetNotifications(int page = 0, int pageSize = 30, CancellationToken token = default);
         UniTask<Result<Void>> MarkNotificationAsRead(BaseNotification notification, CancellationToken token = default);
-        UniTask<Result<Void>> LikeComment(Comment comment, CancellationToken token = default);
+        UniTask<Result<int>> LikeComment(Comment comment, CancellationToken token = default);
+        UniTask<Result<int>> DislikeComment(Comment comment, CancellationToken token = default);
 
-        UniTask<Result<IEnumerable<ChatMessageEntity>>> GetChatPage(User receiver, int startIndex = 0,
+
+        UniTask<Result<List<ChatMessageEntity>>> GetChatPage(User receiver, int startIndex = 0,
             int pageSize = 10, CancellationToken token = default);
         UniTask<Result<Void>> SendChatMessage(User receiver, string message, CancellationToken token = default);
 
@@ -88,7 +88,7 @@ namespace BalootApi
     public class BalootApiHandler : IApiHandler
     {
         private User _signedInUser;
-        [Inject] private ApiRequest _apiRequest;
+        private IApiRequest _apiRequest;
 
         // Repeated endpoint constants
         private const string UserEndpoint = "users";
@@ -99,6 +99,7 @@ namespace BalootApi
         private const string FollowingsEndpoint = "followings";
         private const string FollowingsUnfollowEndpoint = "followings/unfollow";
         private const string PlayerSelectedItemsEndpoint = "player-selected-items/player";
+        private const string SelectedItemsEndpoint = "player-selected-items";
         private const string InventoryEndpoint = "inventory";
         private const string ItemBuyForEndpoint = "item/buy-for";
         private const string ItemsEndpoint = "item";
@@ -125,8 +126,10 @@ namespace BalootApi
         // Cache expiration time for posts (e.g., 5 minutes)
         private readonly TimeSpan _postsCacheExpiration = TimeSpan.FromMinutes(5);
 
-        public BalootApiHandler()
+        [Inject]
+        public BalootApiHandler(IApiRequest apiRequest)
         {
+            _apiRequest = apiRequest;
             EventBus<OnUserLogin>.Register(OnUserLogin);
         }
 
@@ -135,7 +138,7 @@ namespace BalootApi
             EventBus<OnUserLogin>.Deregister(OnUserLogin);
         }
 
-        private void OnUserLogin(OnUserLogin obj)
+        public void OnUserLogin(OnUserLogin obj)
         {
             _signedInUser = obj.User;
         }
@@ -191,6 +194,7 @@ namespace BalootApi
 
         public async UniTask<Result<Void>> RemoveFriend(User user, CancellationToken token = default)
         {
+            if (user is null) return Result<Void>.Failure(EResultError.NullValue, "User passed in is null.");
             var result = await _apiRequest.DeleteRequest($"{FriendsUnfriendEndpoint}/{_signedInUser.Id}/{user.Id}");
             return result;
         }
@@ -207,11 +211,11 @@ namespace BalootApi
 
         public async UniTask<Result<Void>> UpdateProfilePicture(Texture picture, CancellationToken token = default)
         {
+            if (NullParameterCheck<Void>(picture, out var nullResult)) return nullResult;
             var pictureFormItem = new FormItem("image", SerializationUtilities.SerializeToByteArr(picture), EFormItemType.ByteArray);
             var result = await _apiRequest.PatchRequestForm($"{UsersEndpoint}/{_signedInUser.Id}", token, formItems: pictureFormItem);
             return result.ToResult();
         }
-
         public async UniTask<Result<Void>> UpdateStatus(string status, CancellationToken token = default)
         {
             var statusFormItem = new FormItem("status", status, EFormItemType.StringValue);
@@ -219,14 +223,12 @@ namespace BalootApi
             return result.ToResult();
         }
 
-        public async UniTask<Result<Void>> UpdateSelectedItem(CancellationToken token = default)
+        public async UniTask<Result<Void>> SelectItem(Item item, CancellationToken token = default)
         {
-            throw new NotImplementedException();
-        }
-
-        public async UniTask<Result<Void>> UpdateSelectedItems(CancellationToken token = default)
-        {
-            throw new NotImplementedException();
+            if (NullParameterCheck<Void>(item, out var nullResult)) return nullResult;
+            var selectItemDto = new ItemSelectDto(_signedInUser.Id, item.Id);
+            var result = await _apiRequest.PostRequest(SelectedItemsEndpoint, JsonConvert.SerializeObject(selectItemDto), token);
+            return result;
         }
 
         public async UniTask<Result<List<Item>>> GetUserSelectedItems(CancellationToken token = default)
@@ -234,29 +236,31 @@ namespace BalootApi
             var response = await _apiRequest.GetRequest($"{PlayerSelectedItemsEndpoint}/{_signedInUser.Id}", token);
             if (response.IsSuccess)
             {
-                var itemDtos = JsonConvert.DeserializeObject<List<ItemDto>>(response.Value);
+                var itemDtos = JsonConvert.DeserializeObject<ArrayDto<SelectedItemsDto>>(response.Value).Data;
                 var items = itemDtos.Adapt<List<Item>>();
                 return Result<List<Item>>.Success(items);
             }
             return Result<List<Item>>.Failure(response.ErrorMessage);
         }
 
-        public async UniTask<Result<Inventory>> GetInventory(CancellationToken token = default)
+        public async UniTask<Result<List<Item>>> GetInventory(CancellationToken token = default)
         {
             var result = await _apiRequest.GetRequest($"{InventoryEndpoint}/{_signedInUser.Id}", token);
             if (result.IsSuccess)
             {
-                List<ItemDto> itemDtos = JsonConvert.DeserializeObject<List<ItemDto>>(result.Value);
+                var json = JObject.Parse(result.Value);
+                var itemInventoryDtos = JsonConvert.DeserializeObject<List<InventoryItemDto>>(json["items"].ToString());
+                var itemDtos = itemInventoryDtos.Adapt<List<ItemDto>>();
                 var itemEntities = itemDtos.Adapt<List<Item>>();
-                var inventory = new Inventory(itemEntities);
-                _signedInUser.Inventory = inventory;
-                return Result<Inventory>.Success(inventory);
+                _signedInUser.Inventory = itemEntities;
+                return Result<List<Item>>.Success(itemEntities);
             }
-            return Result<Inventory>.Failure(result.ErrorMessage);
+            return Result<List<Item>>.Failure(result.ErrorMessage);
         }
 
         public async UniTask<Result<Void>> PurchaseItem(Item item, CancellationToken token = default)
         {
+            if (NullParameterCheck<Void>(item, out var nullResult)) return nullResult;
             var itemPurchaseDto = new ItemPurchaseDto(item.Id, 1);
             var result = await _apiRequest.PostRequest($"{ItemBuyForEndpoint}/{_signedInUser.Id}", JsonConvert.SerializeObject(itemPurchaseDto), token);
             return result.ToResult();
@@ -293,7 +297,7 @@ namespace BalootApi
             var result = await _apiRequest.GetRequest($"{NotificationsEndpoint}/{_signedInUser.Id}?page={page}&page_size={pageSize}");
             if (result.IsSuccess)
             {
-                var notificationsDto = JsonConvert.DeserializeObject<List<NotificationDto>>(result.Value);
+                var notificationsDto = JsonConvert.DeserializeObject<ArrayDto<NotificationDto>>(result.Value).Data;
                 return Result<List<BaseNotification>>.Success(notificationsDto.Adapt<List<BaseNotification>>());
             }
             return Result<List<BaseNotification>>.Failure(result.ErrorMessage);
@@ -304,23 +308,34 @@ namespace BalootApi
             throw new NotImplementedException();
         }
 
-        public async UniTask<Result<Void>> LikeComment(Comment comment, CancellationToken token = default)
+        public async UniTask<Result<int>> LikeComment(Comment comment, CancellationToken token = default)
         {
             var result = await _apiRequest.PostRequest($"{CommentsEndpoint}/{comment.Id}/like/{_signedInUser.Id}", cancellationToken: token);
             if (result.IsSuccess)
             {
                 comment.LikeCount = JsonConvert.DeserializeObject<int>(result.Value);
-                return Result<Comment>.Success(comment);
+                return Result<int>.Success(comment.LikeCount);
             }
-            return Result<Comment>.Failure(result.ErrorMessage);
+            return Result<int>.Failure(result.ErrorMessage);
         }
 
-        public async UniTask<Result<IEnumerable<ChatMessageEntity>>> GetChatPage(User receiver, int startIndex = 0, int pageSize = 10, CancellationToken token = default)
+        public async UniTask<Result<int>> DislikeComment(Comment comment, CancellationToken token = default)
+        {
+            var result = await _apiRequest.PostRequest($"{CommentsEndpoint}/{comment.Id}/dislike/{_signedInUser.Id}", cancellationToken: token);
+            if (result.IsSuccess)
+            {
+                comment.LikeCount = JsonConvert.DeserializeObject<int>(result.Value);
+                return Result<int>.Success(comment.LikeCount);
+            }
+            return Result<int>.Failure(result.ErrorMessage);
+        }
+
+        public async UniTask<Result<List<ChatMessageEntity>>> GetChatPage(User receiver, int startIndex = 0, int pageSize = 10, CancellationToken token = default)
         {
             var result = await _apiRequest.GetRequest($"{MessageEndpoint}/{_signedInUser.Id}/{receiver.Id}?page={startIndex}&page_size={pageSize}", token);
             if (result.IsSuccess)
             {
-                var chatDto = JsonConvert.DeserializeObject<List<ChatMessageDto>>(result.Value);
+                var chatDto = JsonConvert.DeserializeObject<ArrayDto<ChatMessageDto>>(result.Value).Data;
                 var chat = chatDto.Adapt<List<ChatMessageEntity>>();
                 for (int i = 0; i < chat.Count; ++i)
                 {
@@ -328,10 +343,11 @@ namespace BalootApi
                     var entity = chat[i];
                     entity.User1 = dto.User1Id == _signedInUser.Id ? _signedInUser : receiver;
                     entity.User2 = dto.User2Id == _signedInUser.Id ? receiver : _signedInUser;
+                    chat[i] = entity;
                 }
-                return Result<IEnumerable<ChatMessageEntity>>.Success(chat);
+                return Result<List<ChatMessageEntity>>.Success(chat);
             }
-            return Result<IEnumerable<ChatMessageEntity>>.Failure(result.ErrorMessage);
+            return Result<List<ChatMessageEntity>>.Failure(result.ErrorMessage);
         }
 
         public async UniTask<Result<Void>> SendChatMessage(User receiver, string message, CancellationToken token = default)
@@ -550,7 +566,7 @@ namespace BalootApi
             throw new NotImplementedException();
         }
 
-        private async UniTask<Result<T>> RequestWithRetry<T>(Func<UniTask<Result<T>>> requestFunc, Action<T> onRequestSuccess, CancellationToken token = default)
+        private static async UniTask<Result<T>> RequestWithRetry<T>(Func<UniTask<Result<T>>> requestFunc, Action<T> onRequestSuccess, CancellationToken token = default)
         {
             var retryCount = 3;
             while (retryCount-- > 0)
@@ -565,6 +581,15 @@ namespace BalootApi
             }
 
             return Result<T>.Failure(EResultError.MaxRetryLimit, "Retried the request multiple times and failed.");
+        }
+        private static bool NullParameterCheck<T>(object obj, out Result<T> result)
+        {
+            result = Result<T>.Failure(EResultError.NullValue, "Object is null.");
+            if (obj is null)
+            {
+                return true;
+            }
+            return false;
         }
     }
 

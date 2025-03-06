@@ -7,6 +7,7 @@ namespace BalootApi
     [Serializable]
     public class Item
     {
+        public int Id;
         public string Name;
         public string Description;
         public Texture Icon;
@@ -14,8 +15,8 @@ namespace BalootApi
         public int Price;
 
         // public EItemType ItemType;
-        public int Id;
         public bool IsDefault;
+        public int Quantity;
     }
 
 
@@ -146,7 +147,7 @@ namespace BalootApi
         
         public List<BaseNotification> Notifications { get; set; }
         
-        public Inventory Inventory { get; set; }
+        public List<Item> Inventory { get; set; }
     }
 
 

@@ -111,6 +111,7 @@ namespace ApiHandling.Runtime
         PartialSuccess,
         ServerError,
         Unknown,
-        MaxRetryLimit
+        MaxRetryLimit,
+        NullValue
     }
 }
