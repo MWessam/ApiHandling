@@ -171,12 +171,12 @@ namespace BalootApi
         {
             _apiRequest = apiRequest;
             _authService = authService;
-            EventBus<OnUserLogin>.Register(OnUserLogin);
+            // EventBus<OnUserLogin>.Register(OnUserLogin);
         }
 
         ~BalootApiHandler()
         {
-            EventBus<OnUserLogin>.Deregister(OnUserLogin);
+            // EventBus<OnUserLogin>.Deregister(OnUserLogin);
         }
 
         public void OnUserLogin(OnUserLogin obj)
@@ -1026,7 +1026,7 @@ namespace BalootApi
         }
     }
 
-    public struct OnUserLogin : IEvent
+    public struct OnUserLogin 
     {
         public User User { get; }
 
