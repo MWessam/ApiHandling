@@ -8,31 +8,32 @@ namespace BalootApi
 
     public class Post
     {
-        public int Id { get; set; }
+        public string Id { get; set; }
         public string Content { get; set; }
         public DateTime PostCreationTime { get; set; }
         public EPostType PostType { get; set; }
         public User User { get; set; }
-        public List<Comment> Comments;
-        public int LikesCount;
-        public int CommentsCount => Comments.Count;
-        public bool IsLiked;
+        public List<Comment> Comments { get; set; } = new();
+        public int LikesCount { get; set; }
+        public int CommentsCount { get; set; }
+        public bool IsLiked { get; set; }
     }
 
     public enum EPostType
     {
-        Normal,
-        Vip
+        Free,
+        Premium
     }
 
 
     public class Comment
     {
-        public int Id;
+        public string Id;
         public string Content;
         public DateTime TimeStamp;
-        public User UserId;
+        public User User;
         public int LikeCount;
         public bool IsLiked;
+        public Post Post { get; set; }
     }
 }

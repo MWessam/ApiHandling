@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using Mapster;
 using Newtonsoft.Json;
 
@@ -8,14 +10,47 @@ namespace BalootApi
     {
         public static void InitializeMappers()
         {
-            TypeAdapterConfig<InventoryItemDto, ItemDto>.NewConfig()
-                .Map(x => x, x => x.Item);
+            TypeAdapterConfig<InventoryItemDto, Item>.NewConfig()
+                .Map(dest => dest.Id, src => src.ItemId)
+                .Map(dest => dest.Price, src => src.Price)
+                .Map(dest => dest.Quantity, src => src.Quantity);
             
             TypeAdapterConfig<SelectedItemsDto, ItemDto>.NewConfig()
                 .Map(x => x, x => x.Item);
 
+            TypeAdapterConfig<RelationDto, UserDto>.NewConfig()
+                .Map(dest => dest, src => src.User);
+            
+
             TypeAdapterConfig<NotificationDto, BaseNotification>.NewConfig()
-                .Map(x => x.Type, x => ParseNotificationType(x.Type));
+                .Ignore((dest) => dest.Type)
+                .Ignore((dest) => dest.Post)
+                .AfterMapping((src, dest) =>
+                {
+                    dest.Type = ParseNotificationType(src.Type);
+                    dest.Post = new Post()
+                    {
+                        Id = src.PostId
+                    };
+                });
+
+            TypeAdapterConfig<ColorCustomizationItem, UpdateCustomizationItemDto>.NewConfig()
+                .Map(dest => dest.Type, src => src.CustomizationType.ToString())
+                .Map(dest => dest.ItemId, src => int.Parse(src.Index));
+
+            TypeAdapterConfig<CustomizationItemDto, ColorCustomizationItem>.NewConfig()
+                .Map(dest => dest.CustomizationType, src => Enum.Parse<ECustomization>(src.Type))
+                .AfterMapping((src, dest) => dest.Index = src.Item.Id.ToString());
+
+            TypeAdapterConfig<CharacterAvatarData, List<ColorCustomizationItem>>.NewConfig()
+                .Map(dest => dest, src => src.CustomizationItemsDictionary.Select(x => x.Value).ToList());
+            TypeAdapterConfig<ColorCustomizationItem, CustomizationItemDto>.NewConfig()
+                .Map(dest => dest.Type, src => src.CustomizationType.ToString())
+                .Map(dest => dest.Item, src => new ItemDto()
+                {
+                    Id = int.Parse(src.Index)
+                });
+            
         }
 
         private static ENotificationType ParseNotificationType(string type)
@@ -27,6 +62,10 @@ namespace BalootApi
                 "friend_request" => ENotificationType.FriendRequest,
                 "friend_request_accepted" => ENotificationType.FriendAccepted,
                 "follow" => ENotificationType.Follow,
+                "post_like" => ENotificationType.PostLike,
+                "post_comment" => ENotificationType.Comment,
+                "comment_like" => ENotificationType.CommentLike,
+                
                 _ => ENotificationType.None
             };
         }

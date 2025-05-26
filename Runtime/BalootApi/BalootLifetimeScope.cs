@@ -1,33 +1,32 @@
-﻿using ApiHandling.Generated.Commands;
 using ApiHandling.Generated.Facade;
 using ApiHandling.Runtime;
+using ApiHandling.Runtime.Utilities;
+using BalootApi;
 using UnityEngine;
 using VContainer;
 using VContainer.Unity;
 
-namespace BalootApi
+[DefaultExecutionOrder(-100)]
+public class BalootLifetimeScope : LifetimeScope
 {
-    public class BalootLifetimeScope : LifetimeScope
+    [SerializeField] private ApiConfigSO _apiConfig;
+    [SerializeField] private WebSocketConnection _webSocketConnection;
+    public new static IObjectResolver Resolver;
+    protected override void Awake()
     {
-        public static IObjectResolver Container;
-        [SerializeField] private ApiConfigSO _apiConfigSO;
-        [SerializeField] private ApiRequest _apiRequest;
-        protected override void Configure(IContainerBuilder builder)
-        {
-            base.Configure(builder);
-            builder.Register<IApiHandler, BalootApiHandler>(Lifetime.Singleton);
-            builder.RegisterInstance(_apiRequest).As<ApiRequest>();
-            builder.RegisterInstance(_apiConfigSO).As<ApiConfigSO>();
-            builder.Register<ApiFacade>(Lifetime.Singleton);
-            builder.Register<GetUserCommand>(Lifetime.Singleton);
-            // builder.Register<ApiRequest>(Lifetime.Singleton);
-            // builder.Register<ApiConfigSO>(Lifetime.Singleton);
-        }
+        base.Awake();
+        Resolver = Container;
+    }
 
-        protected override void Awake()
-        {
-            base.Awake();
-            Container = base.Container;
-        }
+    protected override void Configure(IContainerBuilder builder)
+    {
+        base.Configure(builder);
+        builder.RegisterInstance(_apiConfig);
+        builder.Register<IApiHandler, BalootApiHandler>(Lifetime.Singleton);
+        builder.Register<IApiRequest, ApiRequest>(Lifetime.Singleton);
+        builder.Register<IAuthService, AuthService>(Lifetime.Singleton);
+        builder.Register<ApiFacade>(Lifetime.Singleton);
+        builder.RegisterInstance(_webSocketConnection);
+        MapperLayer.InitializeMappers();
     }
 }

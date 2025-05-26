@@ -1,4 +1,6 @@
-﻿namespace ApiHandling.Runtime
+﻿using MVC.Patterns;
+
+namespace ApiHandling.Runtime
 {
     public struct ApiErrorEvent : IEvent
     {

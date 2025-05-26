@@ -2,6 +2,7 @@
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using ApiHandling.Runtime.Utilities;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -17,6 +18,7 @@ namespace ApiHandling.Runtime
         UniTask<Result<string>> DeleteRequest(string path, CancellationToken cancellationToken = default);
         UniTask<Result<string>> PostRequestForm(string path, CancellationToken cancellationToken = default, params FormItem[] formItems);
         Task<Result<string>> PatchRequestForm(string path, CancellationToken cancellationToken = default, params FormItem[] formItems);
+        UniTask<Result<string>> GetRequestWithBody(string path, string jsonBody, CancellationToken cancellationToken = default);
     }
 
     public class TestApiRequest : IApiRequest
@@ -150,16 +152,39 @@ namespace ApiHandling.Runtime
 
             return await SendRequest(request, cancellationToken);
         }
+
+        public async UniTask<Result<string>> GetRequestWithBody(string path, string jsonBody, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
     }
-    public class ApiRequest : MonoBehaviour, IApiRequest
+
+    public class ApiRequest : IApiRequest
     {
-        [Inject] private ApiConfigSO _apiConfig;
+        private ApiConfigSO _apiConfig;
+
+        private IAuthService _authService;
         private int _timeoutMs = 5000;
 
         private string Url(string path) => $"{_apiConfig.ApiUrl}/{path}";
 
+        public ApiRequest(ApiConfigSO apiConfig, IAuthService authService)
+        {
+            _apiConfig = apiConfig;
+            _authService = authService;
+        }
+
+        private void AddAuthHeader(UnityWebRequest request)
+        {
+            if (_authService.HasToken())
+            {
+                request.SetRequestHeader("Authorization", $"Bearer {_authService.GetToken()}");
+            }
+        }
+
         private async UniTask<Result<string>> SendRequest(UnityWebRequest request, CancellationToken cancellationToken = default)
         {
+            AddAuthHeader(request);
             using (request)
             {
                 try
@@ -186,13 +211,31 @@ namespace ApiHandling.Runtime
                     Debug.LogError("Error: " + request.error);
                     return Result<string>.Failure(EResultError.ProtocolError, request.error);
                 }
-                return Result<string>.Success(request.downloadHandler.text);
+                return Result<string>.Success(request.downloadHandler?.text ?? "");
             }
         }
 
         public async UniTask<Result<string>> GetRequest(string path, CancellationToken cancellationToken = default)
         {
             var request = UnityWebRequest.Get(Url(path));
+            var result =  await SendRequest(request, cancellationToken);
+            if (result)
+            {
+                if (string.IsNullOrEmpty(result.Value))
+                {
+                    return Result<string>.Failure(EResultError.NullValue, "Null json returned but successful request.");
+                }
+            }
+
+            return result;
+        }
+        public async UniTask<Result<string>> GetRequestWithBody(string path, string jsonBody, CancellationToken cancellationToken = default)
+        {
+            var request = UnityWebRequest.Get(Url(path));
+            byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonBody);
+            request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+            request.downloadHandler = new DownloadHandlerBuffer();
+            request.SetRequestHeader("Content-Type", "application/json");
             return await SendRequest(request, cancellationToken);
         }
 

@@ -111,5 +111,10 @@ public static class SerializationUtilities
         string json = JsonConvert.SerializeObject(obj);
         return System.Text.Encoding.UTF8.GetBytes(json);
     }
+
+    public static string ToJsonString(this bool b)
+    {
+        return b ? "true" : "false";
+    }
 }
 }
