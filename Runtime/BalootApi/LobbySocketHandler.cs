@@ -3,7 +3,6 @@ using ApiHandling.Generated.Facade;
 using ApiHandling.Runtime.Utilities;
 using Cysharp.Threading.Tasks;
 using Mapster;
-using MVC.Patterns;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using SocketIOClient;

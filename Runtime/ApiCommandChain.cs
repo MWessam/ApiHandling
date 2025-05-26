@@ -2,7 +2,6 @@ using System;
 using System.Threading;
 using ApiHandling.Generated.Facade;
 using Cysharp.Threading.Tasks;
-using MVC.Patterns;
 using UnityEngine;
 
 namespace ApiHandling.Runtime
@@ -85,7 +84,6 @@ namespace ApiHandling.Runtime
                     Debug.LogError("Error: " + result.Error);
                     if (!IsErrorLocalized)
                     {
-                        EventBus<ApiErrorEvent>.Raise(new (result.ErrorMessage));
                     }
                     _onFailure?.Invoke(result.ErrorMessage);
                     return result;
