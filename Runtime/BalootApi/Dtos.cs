@@ -36,11 +36,13 @@ namespace BalootApi
         public string UserHandle;
         public string Password;
         public string Name;
-        public RegisterDto(string userHandle, string password, string name)
+        public string Email;
+        public RegisterDto(string userHandle, string password, string name, string email = "")
         {
             UserHandle = userHandle;
             Password = password;
             Name = name;
+            Email = email;
         }
     }
     [Serializable]
@@ -156,6 +158,9 @@ namespace BalootApi
         public bool IsFriend;
         [JsonProperty("is_following")]
         public bool IsFollowing;
+        public string Email { get; set; }
+        //Matches "nationality"
+        public ENationalityType Nationality { get; set; }
     }
     [Serializable]
     public struct ProfilePictureDto
@@ -391,6 +396,7 @@ namespace BalootApi
         public bool IsOwner;
         public bool IsMember;
         public int MemberCount;
+        public ENationalityType Nationality;
     }
     #endregion
 
