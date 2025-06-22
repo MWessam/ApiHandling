@@ -160,7 +160,7 @@ namespace BalootApi
         public bool IsFollowing;
         public string Email { get; set; }
         //Matches "nationality"
-        public int Nationality { get; set; }
+        public ENationalityType Nationality { get; set; }
     }
     [Serializable]
     public struct ProfilePictureDto
