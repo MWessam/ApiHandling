@@ -8,9 +8,11 @@ namespace BalootApi
 
     public class BaseNotification
     {
-        public int Id;
+        public string Id;
         public User Receiver;
         public User Sender;
+        public Comment Comment;
+        public Post Post;
         public ENotificationType Type;
         public bool IsRead;
         public string Content;
@@ -26,6 +28,8 @@ namespace BalootApi
             IsRead = notification.IsRead;
             Content = notification.Content;
             Timestamp = notification.Timestamp;
+            Comment = notification.Comment;
+            Post = notification.Post;
         }
 
         public static BaseNotification CreateNotification(BaseNotification baseNotification)
@@ -34,6 +38,12 @@ namespace BalootApi
             {
                 case ENotificationType.System:
                     return new SystemNotification(baseNotification);
+                case ENotificationType.PostLike:
+                    return new PostLikeNotification(baseNotification);
+                case ENotificationType.Comment:
+                    return new PostCommentNotification(baseNotification);
+                case ENotificationType.CommentLike:
+                    return new CommentLikeNotification(baseNotification);
                 case ENotificationType.Message:
                     return new ChatNotification(baseNotification);
                 case ENotificationType.FriendRequest:
@@ -54,6 +64,9 @@ namespace BalootApi
         System = 1,
         FriendRequest = 2,
         Message = 3,
+        PostLike = 4,
+        Comment = 5,
+        CommentLike = 6,
         FriendAccepted = 7,
         Follow = 8,
     }
@@ -98,4 +111,29 @@ namespace BalootApi
         {
         }
     }
+    [Serializable]
+    public class PostLikeNotification : BaseNotification
+    {
+        public PostLikeNotification(){}
+        public PostLikeNotification(BaseNotification notification) : base(notification)
+        {
+        }
+    }
+    [Serializable]
+    public class CommentLikeNotification : BaseNotification
+    {
+        public CommentLikeNotification(){}
+        public CommentLikeNotification(BaseNotification notification) : base(notification)
+        {
+        }
+    }
+    [Serializable]
+    public class PostCommentNotification : BaseNotification
+    {
+        public PostCommentNotification(){}
+        public PostCommentNotification(BaseNotification notification) : base(notification)
+        {
+        }
+    }
+
 }

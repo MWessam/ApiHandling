@@ -3,15 +3,7 @@ using UnityEngine;
 
 namespace ApiHandling.Runtime
 {
-    internal class ApiSocketsHandler : MonoBehaviour
-    {
-        // private SocketIOUnity _socketIOUnity;
-        void Main()
-        {
-            var uri = new Uri("https://www.example.com");
 
-        }
-    }
 
     public interface IApiHandler<TDto>
     {

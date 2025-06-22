@@ -2,6 +2,8 @@ using System;
 using System.Threading;
 using ApiHandling.Generated.Facade;
 using Cysharp.Threading.Tasks;
+using MVC.Patterns;
+using UnityEngine;
 
 namespace ApiHandling.Runtime
 {
@@ -12,7 +14,19 @@ namespace ApiHandling.Runtime
             return Result.Success();
         }
     }
-    public class ApiCommandChain<T> : ApiCommandChain
+
+    public interface IApiCommandChain<T>
+    {
+        bool IsErrorLocalized { get; }
+        ApiCommandChain<T> LocalizeError(bool localize);
+        ApiCommandChain<T> OnSuccess(Action<T> action);
+        ApiCommandChain<T> OnFailure(Action<ErrorMessage> action);
+        ApiCommandChain<T> SetTimeout(int timeout);
+        ApiCommandChain<T> SetRetryCount(int retryCount);
+        UniTask<Result<T>> Fetch();
+    }
+
+    public class ApiCommandChain<T> : ApiCommandChain, IApiCommandChain<T>
     {
         private Action<T> _onSuccess;
         private Action<ErrorMessage> _onFailure;
@@ -53,40 +67,50 @@ namespace ApiHandling.Runtime
             return this;
         }
 
-        public async UniTask<Result<T>> Fetch()
+        public virtual async UniTask<Result<T>> Fetch()
         {
-            Result<T> result = Result<T>.Failure(EResultError.NotFound, "Couldn't invoke fetch command.");
-            
-            if (_retryCount == 0)
+            Result<T> result = Result<T>.Failure(EResultError.Unknown, "Unknown error");
+
+            try
             {
-                result = await _fetchCommand.FetchAsync(_token);
-            }
-            else
-            {
-                var timesRetried = 0;
-                bool shouldRetry = timesRetried < _retryCount;
-                while (shouldRetry)
+                if (_retryCount == 0)
                 {
                     result = await _fetchCommand.FetchAsync(_token);
-                    if (result.IsSuccess)
-                    {
-                        break;
-                    }
-                    timesRetried++;
                 }
-            }
-            
-            if (!result.IsSuccess)
-            {
-                if (!IsErrorLocalized)
+                else
                 {
-                    EventBus<ApiErrorEvent>.Raise(new (result.ErrorMessage));
+                    var timesRetried = 0;
+                    bool shouldRetry = timesRetried < _retryCount;
+                    while (shouldRetry)
+                    {
+                        result = await _fetchCommand.FetchAsync(_token);
+                        if (result.IsSuccess)
+                        {
+                            break;
+                        }
+                        timesRetried++;
+                    }
                 }
-                _onFailure?.Invoke(result.ErrorMessage);
+
+                if (!result.IsSuccess)
+                {
+                    Debug.LogError("Error: " + result.Error);
+                    if (!IsErrorLocalized)
+                    {
+                        EventBus<ApiErrorEvent>.Raise(new (result.ErrorMessage));
+                    }
+                    _onFailure?.Invoke(result.ErrorMessage);
+                    return result;
+                }
+                _onSuccess?.Invoke(result.Value);
                 return result;
             }
-            _onSuccess?.Invoke(result.Value);
-            return result;
+            catch (Exception e)
+            {
+                Debug.LogError(e);
+                return Result<T>.Failure(EResultError.Unknown, e.Message);
+            }
+
         }
 
         public override async UniTask<Result> Execute()

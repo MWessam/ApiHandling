@@ -50,7 +50,7 @@ namespace ApiHandling.Runtime
         public static Result<T> Failure(EResultError errorCode, string errorMessage) => new(errorCode, errorMessage);
         public static Result<T> Failure(ErrorMessage resultErrorMessage) =>
             new(resultErrorMessage.ErrorType, resultErrorMessage.Message);
-    
+
         public Result<T> OnSuccess(Action<T> action)
         {
             if (IsSuccess) action(Value);
@@ -84,7 +84,7 @@ namespace ApiHandling.Runtime
 
     public readonly struct Void
     {
-        
+        public static Void Value => new();
     }
 
     public struct ErrorMessage
