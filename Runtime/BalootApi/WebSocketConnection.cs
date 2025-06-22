@@ -48,7 +48,6 @@ namespace BalootApi
             _webSocket.OnDisconnected += OnSocketClosed;
             _webSocket.OnReconnectAttempt += OnSocketReconnectAttempt;
             _webSocket.Connect();
-            Debug.Log(_webSocket.ServerUri.AbsoluteUri);
         }
         private void OnEnable()
         {
