@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using ApiHandling.Generated.Facade;
 using ApiHandling.Runtime.Utilities;
+using ApiHandling.Runtime;
 using Cysharp.Threading.Tasks;
 using Mapster;
-using MVC.Patterns;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using SocketIOClient;
@@ -22,12 +22,10 @@ namespace BalootApi
         private void OnEnable()
         {
             _socketConnection.OnSocketConnected += OnSocketConnected;
-            EventBus<OnUserLogin>.Register(OnLogin);
         }
         private void OnDisable()
         {
             _socketConnection.OnSocketConnected -= OnSocketConnected;
-            EventBus<OnUserLogin>.Deregister(OnLogin);
         }
         private void OnLogin(OnUserLogin obj)
         {
@@ -99,7 +97,7 @@ namespace BalootApi
             var str=response.ToString();
             Debug.Log(str);
             TicketResponseEntity ticketResponseEntity=JsonConvert.DeserializeObject<List<TicketResponseEntity>>(str)[0];
-            EventBus<OnReceiveTicketId>.Raise(new(ticketResponseEntity));
+            ApiEventBus<OnReceiveTicketId>.Raise(new(ticketResponseEntity));
         }
 
         private void OnNotificationReceived(SocketIOResponse obj)
@@ -122,11 +120,11 @@ namespace BalootApi
                     var notificationDto = JsonConvert.DeserializeObject<NotificationDto>(jObject.ToString());
                     var notification = notificationDto.Adapt<BaseNotification>();
                     
-                    EventBus<NotificationReceivedEvent>.Raise(new(new(){notification}));
+                    ApiEventBus<NotificationReceivedEvent>.Raise(new(new(){notification}));
                     return;
                 }
             }
-            // EventBus<NotificationReceivedEvent>.Raise(new());
+            ApiEventBus<NotificationReceivedEvent>.Raise(new());
         }
         private async UniTask OnLobbyInvitationReceivedAsync(SocketIOResponse obj)
         {
@@ -152,18 +150,18 @@ namespace BalootApi
             await UniTask.SwitchToMainThread();
             if (result.IsSuccess)
             {
-                EventBus<OnLobbyInvited>.Raise(new(result.Value, lobbyId));
+                ApiEventBus<OnLobbyInvited>.Raise(new(result.Value, lobbyId));
             }
         }
 
         private void OnKickedFromLobby(SocketIOResponse response)
         {
-            EventBus<OnLobbyLeft>.Raise(new());
+            ApiEventBus<OnLobbyLeft>.Raise(new());
         }
 
         private void OnLeftLobby(SocketIOResponse response)
         {
-            EventBus<OnLobbyLeft>.Raise(new());
+            ApiEventBus<OnLobbyLeft>.Raise(new());
         }
 
         private void OnLobbyUpdated(SocketIOResponse response)
@@ -217,7 +215,7 @@ namespace BalootApi
                 }
             }
             await UniTask.SwitchToMainThread();
-            EventBus<OnLobbyUpdated>.Raise(new(users, host));
+            ApiEventBus<OnLobbyUpdated>.Raise(new(users, host));
         }
         
 

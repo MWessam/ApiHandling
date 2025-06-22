@@ -1,8 +1,8 @@
-﻿using MVC.Patterns;
-
+﻿
 namespace ApiHandling.Runtime
 {
-    public struct ApiErrorEvent : IEvent
+    public interface IEvent{}
+    public struct ApiErrorEvent
     {
         public ErrorMessage ErrorMessage { get; private set; }
         public ApiErrorEvent(ErrorMessage errorMessage)

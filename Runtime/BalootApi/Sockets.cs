@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using MVC.Patterns;
 
 namespace BalootApi
 {
@@ -11,7 +10,7 @@ namespace BalootApi
         public string Value;
     }
 
-    public struct OnLobbyUpdated : IEvent
+    public struct OnLobbyUpdated
     {
         public List<User> LobbyUsers;
         public User Host;
@@ -23,17 +22,17 @@ namespace BalootApi
         }
     }
 
-    public struct OnLobbyLeft : IEvent
+    public struct OnLobbyLeft
     {
         private List<User> LobbyUsers;
     }
 
-    public class OnLobbyKicked : IEvent
+    public class OnLobbyKicked
     {
         private List<User> LobbyUsers;
     }
 
-    public struct OnLobbyInvited : IEvent
+    public struct OnLobbyInvited
     {
         public User Inviter;
         public string LobbyId;
@@ -44,7 +43,7 @@ namespace BalootApi
             LobbyId = lobbyId;
         }
     }
-    public struct OnReceiveTicketId: IEvent
+    public struct OnReceiveTicketId
     {
         public TicketResponseEntity TicketResponseEntity;
         public OnReceiveTicketId(TicketResponseEntity ticketResponseEntity)
@@ -62,7 +61,7 @@ namespace BalootApi
     {
         public string ticketId;
     }
-    public struct NotificationReceivedEvent : IEvent
+    public struct NotificationReceivedEvent
     {
         public List<BaseNotification> Notifications;
 

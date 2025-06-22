@@ -9,7 +9,6 @@ using Cysharp.Threading.Tasks;
 using Mapster;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using MVC.Patterns;
 using UnityEngine;
 using VContainer;
 using VContainer.Unity;
@@ -178,12 +177,12 @@ namespace BalootApi
         {
             _apiRequest = apiRequest;
             _authService = authService;
-            EventBus<OnUserLogin>.Register(OnUserLogin);
+            ApiEventBus<OnUserLogin>.Register(OnUserLogin);
         }
 
         ~BalootApiHandler()
         {
-            EventBus<OnUserLogin>.Deregister(OnUserLogin);
+            ApiEventBus<OnUserLogin>.Deregister(OnUserLogin);
         }
 
         public void OnUserLogin(OnUserLogin obj)
@@ -207,7 +206,7 @@ namespace BalootApi
                 }
                 // Set JWT token for future requests
                 _authService.SetToken(loginResultDto.AccessToken);
-                EventBus<OnUserLogin>.Raise(new OnUserLogin(user));
+                ApiEventBus<OnUserLogin>.Raise(new OnUserLogin(user));
                 return Result<User>.Success(user);
             }
             return Result<User>.Failure(response.ErrorMessage);
@@ -231,7 +230,7 @@ namespace BalootApi
 
                 // Set JWT token for future requests
                 _authService.SetToken(loginResultDto.AccessToken);
-                EventBus<OnUserLogin>.Raise(new OnUserLogin(user));
+                ApiEventBus<OnUserLogin>.Raise(new OnUserLogin(user));
                 return Result<User>.Success(user);
             }
             return Result<User>.Failure(response.ErrorMessage);
@@ -249,7 +248,7 @@ namespace BalootApi
 
                 // Set JWT token for future requests
                 _authService.SetToken(loginResultDto.AccessToken);
-                EventBus<OnUserLogin>.Raise(new OnUserLogin(user));
+                ApiEventBus<OnUserLogin>.Raise(new OnUserLogin(user));
                 return Result<User>.Success(user);
             }
             return Result<User>.Failure(response.ErrorMessage);
@@ -268,7 +267,7 @@ namespace BalootApi
 
                 // Set JWT token for future requests
                 _authService.SetToken(loginResultDto.AccessToken);
-                EventBus<OnUserLogin>.Raise(new OnUserLogin(user));
+                ApiEventBus<OnUserLogin>.Raise(new OnUserLogin(user));
                 // return await GetUser(userDto.Id.ToString(), token);
                 return Result<User>.Success(user);
             }
@@ -1100,7 +1099,7 @@ namespace BalootApi
 
     }
 
-    public struct OnUserLogin : IEvent
+    public struct OnUserLogin
     {
         public User User { get; }
 
