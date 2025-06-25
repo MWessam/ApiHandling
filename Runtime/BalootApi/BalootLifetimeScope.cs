@@ -10,10 +10,6 @@ using VContainer.Unity;
 public class BalootLifetimeScope : LifetimeScope
 {
     [SerializeField] protected ApiConfigSO _apiConfig;
-    [SerializeField] protected WebSocketConnection _webSocketConnection;
-    [SerializeField] protected LobbySocketHandler _lobbySocketHandler;
-    [SerializeField] protected ChatSocketHandler _chatSocketHandler;
-    // [SerializeField] private ChatSocketHandler _chatSocketHandler;
     public new static IObjectResolver Resolver;
     protected override void Awake()
     {
