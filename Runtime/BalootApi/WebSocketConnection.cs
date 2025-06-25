@@ -15,7 +15,7 @@ namespace BalootApi
         #region VAR
         [Inject] private ApiConfigSO _configSo;
         [SerializeField] private List<SocketQueries> _socketQueries;
-        private Dictionary<string, SocketIOUnity> _webSocket;
+        private Dictionary<string, SocketIOUnity> _webSocket=new();
         public event Action OnSocketConnected;
         #endregion
         #region ENGINE
@@ -57,10 +57,9 @@ namespace BalootApi
             {
                 webSocket?.Disconnect();
             }
-            
-            var websocket = _webSocket[socketName] = new(socketName, new SocketIOOptions()
+            var websocket = _webSocket[socketName] = new(socket.SocketUri, new SocketIOOptions()
             {
-                Query = _socketQueries.ToDictionary(x => x.Parameter, x=> x.Value),
+                Query = socketQueries.ToDictionary(x => x.Parameter, x=> x.Value),
             });
             
             websocket.JsonSerializer = new NewtonsoftJsonSerializer();
