@@ -154,6 +154,8 @@ namespace BalootApi
         // This property is in your existing DTO though not found in the JSON sample.
         [JsonProperty("photo_url")]
         public string PhotoUrl { get; set; }
+        [JsonProperty("cover_photo_url")]
+        public string CoverPhotoUrl { get; set; }
         [JsonProperty("is_friend")]
         public bool IsFriend;
         [JsonProperty("is_following")]

@@ -89,7 +89,9 @@ namespace BalootApi
 
         // Matches "photo_url" (changed from Texture to string for URL)
         public string PhotoUrl { get; set; }
+        public string CoverPhotoUrl { get; set; }
         public Texture2D ProfilePic { get; set; }
+        public Texture2D CoverPhotoPic { get; set; }
 
         // Matches "status"
         public string Status { get; set; }

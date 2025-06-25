@@ -15,39 +15,60 @@ namespace BalootApi
         #region VAR
         [Inject] private ApiConfigSO _configSo;
         [SerializeField] private List<SocketQueries> _socketQueries;
-        private SocketIOUnity _webSocket;
+        private Dictionary<string, SocketIOUnity> _webSocket;
         public event Action OnSocketConnected;
         #endregion
         #region ENGINE
 
         public void Connect()
         {
-            _webSocket?.Disconnect();
-            _webSocket = new(_configSo.SocketUri, new SocketIOOptions()
+            foreach (var socketKvp in _webSocket)
+            {
+                socketKvp.Value?.Disconnect();
+            }
+
+            foreach (var socket in _configSo.SocketUris)
+            {
+                var websocket = _webSocket[socket.SocketName] = new(socket.SocketUri, new SocketIOOptions()
+                {
+                    Query = _socketQueries.ToDictionary(x => x.Parameter, x=> x.Value),
+                });
+                
+                websocket.JsonSerializer = new NewtonsoftJsonSerializer();
+                websocket.OnConnected += OnSocketOpen;
+                websocket.OnError += OnSocketError;
+                websocket.OnDisconnected += OnSocketClosed;
+                websocket.OnReconnectAttempt += OnSocketReconnectAttempt;
+                websocket.Connect();
+            }
+
+
+        }
+
+        public void Connect(string socketName, List<SocketQueries> socketQueries)
+        {
+            var socket = _configSo.SocketUris.FirstOrDefault(x => x.SocketName == socketName);
+            if (socket == null)
+            {
+                Debug.LogError($"Found no socket of name: {socketName}");
+                return;
+            }
+            if (_webSocket.TryGetValue(socket.SocketName, out var webSocket))
+            {
+                webSocket?.Disconnect();
+            }
+            
+            var websocket = _webSocket[socketName] = new(socketName, new SocketIOOptions()
             {
                 Query = _socketQueries.ToDictionary(x => x.Parameter, x=> x.Value),
             });
-            _webSocket.JsonSerializer = new NewtonsoftJsonSerializer();
-            _webSocket.OnConnected += OnSocketOpen;
-            _webSocket.OnError += OnSocketError;
-            _webSocket.OnDisconnected += OnSocketClosed;
-            _webSocket.OnReconnectAttempt += OnSocketReconnectAttempt;
-            _webSocket.Connect();
-        }
-
-        public void Connect(List<SocketQueries> socketQueries)
-        {
-            _webSocket?.Disconnect();
-            _webSocket = new(_configSo.SocketUri, new SocketIOOptions()
-            {
-                Query = socketQueries.ToDictionary(x => x.Parameter, x=> x.Value),
-            });
-            _webSocket.JsonSerializer = new NewtonsoftJsonSerializer();
-            _webSocket.OnConnected += OnSocketOpen;
-            _webSocket.OnError += OnSocketError;
-            _webSocket.OnDisconnected += OnSocketClosed;
-            _webSocket.OnReconnectAttempt += OnSocketReconnectAttempt;
-            _webSocket.Connect();
+            
+            websocket.JsonSerializer = new NewtonsoftJsonSerializer();
+            websocket.OnConnected += OnSocketOpen;
+            websocket.OnError += OnSocketError;
+            websocket.OnDisconnected += OnSocketClosed;
+            websocket.OnReconnectAttempt += OnSocketReconnectAttempt;
+            websocket.Connect();
         }
         private void OnEnable()
         {
@@ -61,23 +82,32 @@ namespace BalootApi
 
         private void OnDestroy()
         {
-            _webSocket?.Disconnect();
-            _webSocket?.Dispose();
+            foreach (var socket in _webSocket)
+            {
+                socket.Value?.Disconnect();
+                socket.Value?.Dispose();
+            }
         }
         #endregion
 
         #region MEMBER
 
-        public void SubscribeTo(string eventName, Action<SocketIOResponse> callback)
+        public void SubscribeTo(string eventName, string socketName, Action<SocketIOResponse> callback)
         {
-            _webSocket.On(eventName, callback);
+            if (_webSocket.TryGetValue(socketName, out var socket))
+            {
+                socket.On(eventName, callback);
+            }
         }
 
-        public async UniTask SendMessage(string eventName, string json)
+        public async UniTask SendMessage(string eventName, string socketName, string json)
         {
             try
             {
-                await _webSocket.EmitStringAsJSONAsync(eventName, json);
+                if (_webSocket.TryGetValue(socketName, out var socket))
+                {
+                    await socket.EmitStringAsJSONAsync(eventName, json);
+                }
                 Debug.Log(eventName);
             }
             catch (Exception e)

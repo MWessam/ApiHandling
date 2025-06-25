@@ -12,24 +12,48 @@ using VContainer;
 
 namespace BalootApi
 {
-    public class LobbySocketHandler : MonoBehaviour
+    public abstract class BaseSocketHandler : MonoBehaviour
     {
-        [Inject] private WebSocketConnection _socketConnection;
-        public LobbyEntity UpdatedLobbyEntity;
-        [Inject] private ApiFacade _apiFacade; 
-        #region ENGINE
-
+        [Inject] protected WebSocketConnection SocketConnection;
+        [Inject] protected ApiFacade ApiFacade; 
         private void OnEnable()
         {
-            _socketConnection.OnSocketConnected += OnSocketConnected;
+            SocketConnection.OnSocketConnected += OnSocketConnected;
+            ApiEventBus<OnUserLogin>.Register(OnLogin);
         }
         private void OnDisable()
         {
-            _socketConnection.OnSocketConnected -= OnSocketConnected;
+            SocketConnection.OnSocketConnected -= OnSocketConnected;
+            ApiEventBus<OnUserLogin>.Deregister(OnLogin);
+
         }
-        private void OnLogin(OnUserLogin obj)
+
+        protected abstract void OnSocketConnected();
+        protected abstract void OnLogin(OnUserLogin obj);
+    }
+
+    public class ChatSocketHandler : BaseSocketHandler
+    {
+        protected override void OnSocketConnected()
         {
-            _socketConnection.Connect(new()
+        }
+
+        protected override void OnLogin(OnUserLogin obj)
+        {
+            
+        }
+    }
+    
+    public class LobbySocketHandler : BaseSocketHandler
+    {
+
+        public LobbyEntity UpdatedLobbyEntity;
+        #region ENGINE
+
+
+        protected override void OnLogin(OnUserLogin obj)
+        {
+            SocketConnection.Connect("lobby", new()
             {
                 new SocketQueries()
                 {
@@ -44,53 +68,53 @@ namespace BalootApi
         #region Member
         public void InvitePlayer(string userID)
         {
-            _socketConnection.SendMessage(LobbyWebSocketEventNames.SEND_INVITE_PLAYER, $@"{{ ""playerId"": {long.Parse(userID)}}}");
+            SocketConnection.SendMessage(LobbyWebSocketEventNames.SEND_INVITE_PLAYER, "lobby", $@"{{ ""playerId"": {long.Parse(userID)}}}");
 
         }
         public void AcceptLobbyInvitation(string lobbyId)
         {
-            _socketConnection.SendMessage(LobbyWebSocketEventNames.SEND_ACCEPT_LOBBY_INVITATION, $@"{{ ""lobbyId"": {long.Parse(lobbyId)}}}");
+            SocketConnection.SendMessage(LobbyWebSocketEventNames.SEND_ACCEPT_LOBBY_INVITATION, "lobby", $@"{{ ""lobbyId"": {long.Parse(lobbyId)}}}");
         }
 
         public void KickUser(string userID)
         {
-            _socketConnection.SendMessage(LobbyWebSocketEventNames.SEND_KICK_PLAYER, $@"{{ ""playerId"": {long.Parse(userID)}}}");
+            SocketConnection.SendMessage(LobbyWebSocketEventNames.SEND_KICK_PLAYER, "lobby", $@"{{ ""playerId"": {long.Parse(userID)}}}");
 
         }
 
         public void LeaveLobby()
         {
-            _socketConnection.SendMessage(LobbyWebSocketEventNames.SEND_LEAVE_LOBBY, $@"{{ ""lobbyId"": 1}}");
+            SocketConnection.SendMessage(LobbyWebSocketEventNames.SEND_LEAVE_LOBBY, "lobby", $@"{{ ""lobbyId"": 1}}");
         }
 
         public void AssignNewOwner(string userID)
         {
-            _socketConnection.SendMessage(LobbyWebSocketEventNames.SEND_ASSIGN_NEW_OWNER, $@"{{ ""playerId"": {long.Parse(userID)}}}");
+            SocketConnection.SendMessage(LobbyWebSocketEventNames.SEND_ASSIGN_NEW_OWNER, "lobby", $@"{{ ""playerId"": {long.Parse(userID)}}}");
 
         }
 
         public void StartMatchmaking(string ticketId)
         {
-            _socketConnection.SendMessage(LobbyWebSocketEventNames.SEND_START_MATCHMAKING, $@"{{ ""ticketId"": ""{ticketId}""}}");
+            SocketConnection.SendMessage(LobbyWebSocketEventNames.SEND_START_MATCHMAKING, "lobby", $@"{{ ""ticketId"": ""{ticketId}""}}");
         }
 
         public void SetReadyState(bool newReadyState,string lobbyId)
         {
             string boolean=newReadyState?"true":"false";
-            _socketConnection.SendMessage(LobbyWebSocketEventNames.SEND_SET_READY_STATE,$@"{{""ready"":{boolean},""lobbyId"":{long.Parse(lobbyId)}}}");
+            SocketConnection.SendMessage(LobbyWebSocketEventNames.SEND_SET_READY_STATE, "lobby", $@"{{""ready"":{boolean},""lobbyId"":{long.Parse(lobbyId)}}}");
         }
         #endregion
 
         #region INTERNAL
 
-        private void OnSocketConnected()
+        protected override void OnSocketConnected()
         {
-            _socketConnection.SubscribeTo(LobbyWebSocketEventNames.LISTEN_LOBBY_INVITATION, OnLobbyInvitationReceived);
-            _socketConnection.SubscribeTo(LobbyWebSocketEventNames.LISTEN_NOTIFICATION, OnNotificationReceived);
-            _socketConnection.SubscribeTo(LobbyWebSocketEventNames.LISTEN_LEFT_LOBBY, OnLeftLobby);
-            _socketConnection.SubscribeTo(LobbyWebSocketEventNames.LISTEN_LOBBY_UPDATED, OnLobbyUpdated);
-            _socketConnection.SubscribeTo(LobbyWebSocketEventNames.LISTEN_KICKED_FROM_LOBBY, OnKickedFromLobby);
-            _socketConnection.SubscribeTo(LobbyWebSocketEventNames.LISTEN_PROPAGATE_MATCHMAKING_TICKET,OnReceiveTicketId);
+            SocketConnection.SubscribeTo(LobbyWebSocketEventNames.LISTEN_LOBBY_INVITATION, "lobby", OnLobbyInvitationReceived);
+            SocketConnection.SubscribeTo(LobbyWebSocketEventNames.LISTEN_NOTIFICATION, "lobby", OnNotificationReceived);
+            SocketConnection.SubscribeTo(LobbyWebSocketEventNames.LISTEN_LEFT_LOBBY, "lobby", OnLeftLobby);
+            SocketConnection.SubscribeTo(LobbyWebSocketEventNames.LISTEN_LOBBY_UPDATED, "lobby", OnLobbyUpdated);
+            SocketConnection.SubscribeTo(LobbyWebSocketEventNames.LISTEN_KICKED_FROM_LOBBY, "lobby", OnKickedFromLobby);
+            SocketConnection.SubscribeTo(LobbyWebSocketEventNames.LISTEN_PROPAGATE_MATCHMAKING_TICKET, "lobby",OnReceiveTicketId);
         }
         void OnReceiveTicketId(SocketIOResponse response)
         {
@@ -146,7 +170,7 @@ namespace BalootApi
                     }
                 }
             }
-            var result = await _apiFacade.GetUser(inviterPlayerId).Fetch();
+            var result = await ApiFacade.GetUser(inviterPlayerId).Fetch();
             await UniTask.SwitchToMainThread();
             if (result.IsSuccess)
             {
@@ -204,7 +228,7 @@ namespace BalootApi
             User host = null;
             foreach (var lobbyItem in lobbyStuff)
             {
-                var result = await _apiFacade.GetUser(lobbyItem.userId).Fetch();
+                var result = await ApiFacade.GetUser(lobbyItem.userId).Fetch();
                 if (result.IsSuccess)
                 {
                     users.Add(result.Value);

@@ -438,6 +438,7 @@ namespace BalootApi
                 var users = usersDtos.Adapt<List<User>>();
                 return Result<List<User>>.Success(users);
             }
+
             return Result<List<User>>.Failure(usersResult.ErrorMessage);
         }
 
