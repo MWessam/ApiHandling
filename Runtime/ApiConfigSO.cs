@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace ApiHandling.Runtime
@@ -11,6 +12,7 @@ namespace ApiHandling.Runtime
         public List<SocketData> SocketUris;
     }
 
+    [Serializable]
     public class SocketData
     {
         public string SocketName;
