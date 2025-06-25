@@ -32,18 +32,6 @@ namespace BalootApi
         protected abstract void OnLogin(OnUserLogin obj);
     }
 
-    public class ChatSocketHandler : BaseSocketHandler
-    {
-        protected override void OnSocketConnected()
-        {
-        }
-
-        protected override void OnLogin(OnUserLogin obj)
-        {
-            
-        }
-    }
-    
     public class LobbySocketHandler : BaseSocketHandler
     {
 
