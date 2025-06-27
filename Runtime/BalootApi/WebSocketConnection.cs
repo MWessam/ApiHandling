@@ -125,7 +125,7 @@ namespace BalootApi
 
         private void OnSocketOpen(object sender, EventArgs eventArgs)
         {
-            Debug.Log($"Ze bluetoos device (websocket: {_configSo.SocketUri}) has connecteduh  sucksesfullay!");
+            Debug.Log($"Connection to (websocket: {_configSo.SocketUris.FirstOrDefault().SocketUri}) is Successful!");
             OnSocketConnected?.Invoke();
         }
 
