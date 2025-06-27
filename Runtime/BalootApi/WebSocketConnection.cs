@@ -57,18 +57,18 @@ namespace BalootApi
             {
                 webSocket?.Disconnect();
             }
-            
-            var websocket = _webSocket[socketName] = new(socket.SocketUri, new SocketIOOptions()
+            _webSocket[socketName] = new(socket.SocketUri, new SocketIOOptions()
             {
-                Query = socketQueries.ToDictionary(x => x.Parameter, x=> x.Value),
+                Query = socketQueries.ToDictionary(x => x.Parameter, x => x.Value),
             });
-            
+            var websocket = _webSocket[socketName];
             websocket.JsonSerializer = new NewtonsoftJsonSerializer();
             websocket.OnConnected += OnSocketOpen;
             websocket.OnError += OnSocketError;
             websocket.OnDisconnected += OnSocketClosed;
             websocket.OnReconnectAttempt += OnSocketReconnectAttempt;
             websocket.Connect();
+            //Debug.Log(websocket.ServerUri.AbsoluteUri);
         }
         private void OnEnable()
         {
@@ -125,7 +125,7 @@ namespace BalootApi
 
         private void OnSocketOpen(object sender, EventArgs eventArgs)
         {
-            Debug.Log($"Ze bluetoos device (websocket: {_configSo.SocketUris.FirstOrDefault().SocketUri}) has connecteduh  sucksesfullay!");
+            Debug.Log($"Ze bluetoos device (websocket: {_configSo.SocketUri}) has connecteduh  sucksesfullay!");
             OnSocketConnected?.Invoke();
         }
 
