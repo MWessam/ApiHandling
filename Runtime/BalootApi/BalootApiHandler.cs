@@ -375,12 +375,20 @@ namespace BalootApi
 
             if (_cachedPhotos.TryGetValue(photoUrl, out var cacheEntry))
             {
-                if (DateTime.UtcNow - cacheEntry.cachedAt < _userCacheExpiration)
+                Debug.Log($"Cached texture found for {photoUrl} with expiration: {_userCacheExpiration}");
+                if (cacheEntry.picture == null)
                 {
+                    Debug.Log($"Cached texture is null for {photoUrl}");
+                    _cachedPhotos.Remove(photoUrl);
+                }
+                else if (DateTime.UtcNow - cacheEntry.cachedAt < _userCacheExpiration)
+                {
+                    Debug.Log($"Cached texture is valid for {photoUrl}");
                     return Result<Texture2D>.Success(cacheEntry.picture);
                 }
                 else
                 {
+                    Debug.Log($"Cached texture expired for {photoUrl}");
                     // Optionally remove expired entry
                     _userCache.Remove(photoUrl);
                 }
@@ -390,11 +398,16 @@ namespace BalootApi
 
             try
             {
+                Debug.Log($"Downloading texture from {photoUrl}");
                 await www.SendWebRequest().ToUniTask(cancellationToken: token);
 
                 if (www.result == UnityWebRequest.Result.Success)
                 {
                     var tex = DownloadHandlerTexture.GetContent(www);
+                    if (tex == null)
+                    {
+                        return Result<Texture2D>.Failure(EResultError.ServerError, $"Couldn't get texture from url: {www.url} with url parameter: {photoUrl}");
+                    }
                     return Result<Texture2D>.Success(tex);
                 }
                 else

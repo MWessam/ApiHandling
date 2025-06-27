@@ -8,7 +8,6 @@ namespace ApiHandling.Runtime
     public class ApiConfigSO : ScriptableObject
     {
         public string ApiUrl;
-        public string SocketUri;
         public List<SocketData> SocketUris;
     }
 

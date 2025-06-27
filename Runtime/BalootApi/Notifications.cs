@@ -11,6 +11,7 @@ namespace BalootApi
         public string Id;
         public User Receiver;
         public User Sender;
+        public string SenderId;
         public Comment Comment;
         public Post Post;
         public ENotificationType Type;

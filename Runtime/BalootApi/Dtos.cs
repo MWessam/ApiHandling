@@ -318,6 +318,7 @@ namespace BalootApi
     {
         public string Id;
         public UserDto Sender;
+        public string SenderId;
         public string ReceiverId;
         public string Type;
         public string Content;
