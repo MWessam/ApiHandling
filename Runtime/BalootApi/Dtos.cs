@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using UnityEngine;
 using UnityEngine.Serialization;
 
 namespace BalootApi
@@ -163,6 +164,35 @@ namespace BalootApi
         public string Email { get; set; }
         //Matches "nationality"
         public ENationalityType Nationality { get; set; }
+
+        public int ShowOptions { get; set; }
+        public DateTime? Birthdate { get; set; }
+    }
+    [Serializable]
+    [JsonObject(NamingStrategyType = typeof(SnakeCaseNamingStrategy))]
+    public struct UpdateUserDto
+    {
+        public string? Name { get; set; }
+
+        public string? Status { get; set; }
+
+        public string? Email { get; set; }
+
+        public bool? AvailabilityForDm { get; set; }
+
+        public int? Nationality { get; set; }
+
+        public DateTime? Birthdate { get; set; }
+        public bool? ShowGender { get; set; }
+        public bool? ShowAge { get; set; }
+        public bool? ShowFlag { get; set; }
+        public int ShowOptionsBitmask { get; set; }
+
+        public bool? IsAnonymous { get; set; }
+
+        public bool? IsMale { get; set; }
+
+        public Texture2D? CoverPhoto { get; set; }
     }
     [Serializable]
     public struct ProfilePictureDto

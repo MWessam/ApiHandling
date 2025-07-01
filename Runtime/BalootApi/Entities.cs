@@ -38,8 +38,14 @@ namespace BalootApi
         Subscription,
         Gold,
         Cosmetics
-
-
+    }
+    [Flags]
+    public enum EShowOptions
+    {
+        None = 0,
+        ShowFlag = 1,
+        ShowGender = 2,
+        ShowAge = 4,
     }
     [Serializable]
     public class Inventory
@@ -179,9 +185,12 @@ namespace BalootApi
         public bool IsFriend { get; set; }
 
         public List<BaseNotification> Notifications { get; set; } = new();
-
         public List<Item> Inventory { get; set; } = new();
         public CharacterAvatarData AvatarData { get; set; }
+        public DateTime Birthdate { get; set; }
+        public bool ShowGender { get; set; }
+        public bool ShowAge { get; set; }
+        public bool ShowFlag { get; set; }
     }
     public class CreateUserEntity
     {

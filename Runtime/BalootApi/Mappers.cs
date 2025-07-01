@@ -59,6 +59,21 @@ namespace BalootApi
                     Id = int.Parse(src.Index)
                 });
 
+            // Map from UserDto to User (convert bitmask to individual booleans)
+            TypeAdapterConfig<UserDto, User>.NewConfig()
+                .Map(dest => dest, src => src)
+                .Ignore(dest => dest.ShowGender)
+                .Ignore(dest => dest.ShowAge)
+                .Ignore(dest => dest.ShowFlag)
+                .AfterMapping((src, dest) =>
+                {
+                    // Convert bitmask to individual boolean fields
+                    int bitmask = src.ShowOptions;
+                    dest.ShowGender = (bitmask & (1 << 0)) != 0;  // Bit 0: Show Gender
+                    dest.ShowAge = (bitmask & (1 << 1)) != 0;     // Bit 1: Show Age
+                    dest.ShowFlag = (bitmask & (1 << 2)) != 0;    // Bit 2: Show Flag
+                });
+
         }
 
         private static ENotificationType ParseNotificationType(string type)

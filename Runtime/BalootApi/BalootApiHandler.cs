@@ -26,6 +26,7 @@ namespace BalootApi
         UniTask<Result<User>> Register(RegisterDto registerDto, CancellationToken token = default);
         UniTask<Result<User>> RegisterWithToken(string loginToken, RegisterDto registerDto, CancellationToken token = default);
         UniTask<Result<User>> GetUser(string userId, bool invalidateCache = false, CancellationToken token = default);
+        UniTask<Result<User>> UpdateUser(UpdateUserDto updateUserDto, CancellationToken token = default);
         UniTask<Result<List<User>>> GetUsers(int pageStart = 0, int pageSize = 10, string name = "", CancellationToken token = default);
 
         UniTask<Result<List<User>>> GetUsersByIds(IEnumerable<string> ids, int pageStart = 0, int pageSize = 10, CancellationToken token = default);
@@ -308,6 +309,61 @@ namespace BalootApi
                 }
                 _userCache[userId] = (user, DateTime.UtcNow);
                 return Result<User>.Success(user);
+            }
+            return Result<User>.Failure(response.ErrorMessage);
+        }
+
+        public async UniTask<Result<User>> UpdateUser(UpdateUserDto updateUserDto, CancellationToken token = default)
+        {
+            _signedInUser.ShowGender = updateUserDto.ShowGender ?? false;
+            _signedInUser.ShowAge = updateUserDto.ShowAge ?? false;
+            _signedInUser.ShowFlag = updateUserDto.ShowFlag ?? false;
+
+            // Convert the booleans in updateuserdto to bitmask
+            int bitmask = 0;
+            if (updateUserDto.ShowGender == true) bitmask |= 1 << 0;
+            if (updateUserDto.ShowAge == true) bitmask |= 1 << 1;
+            if (updateUserDto.ShowFlag == true) bitmask |= 1 << 2;
+
+            List<FormItem> formItems = new List<FormItem>();
+            if (updateUserDto.Name != null)
+                formItems.Add(new FormItem("name", updateUserDto.Name, EFormItemType.StringValue));
+            if (updateUserDto.Status != null)
+                formItems.Add(new FormItem("status", updateUserDto.Status, EFormItemType.StringValue));
+            if (updateUserDto.Email != null)
+                formItems.Add(new FormItem("email", updateUserDto.Email, EFormItemType.StringValue));
+            if (updateUserDto.AvailabilityForDm != null)
+                formItems.Add(new FormItem("availability_for_dm", updateUserDto.AvailabilityForDm.Value.ToString(), EFormItemType.StringValue));
+            if (updateUserDto.Birthdate != null)
+                formItems.Add(new FormItem("birth_date", updateUserDto.Birthdate.Value.ToString(), EFormItemType.StringValue));
+            if (bitmask >= 0 && updateUserDto.ShowAge != null && updateUserDto.ShowGender != null && updateUserDto.ShowFlag != null)
+            {
+                formItems.Add(new FormItem("show_options_bitmask", bitmask, EFormItemType.StringValue));
+            }
+            if (updateUserDto.IsAnonymous != null)
+                formItems.Add(new FormItem("is_anonymous", updateUserDto.IsAnonymous.Value.ToString(), EFormItemType.StringValue));
+            if (updateUserDto.IsMale != null)
+                formItems.Add(new FormItem("is_male", updateUserDto.IsMale.Value.ToString(), EFormItemType.StringValue));
+            if (updateUserDto.CoverPhoto != null)
+            {
+                formItems.Add(new FormItem("cover_photo", SerializationUtilities.SerializeToByteArr(updateUserDto.CoverPhoto), EFormItemType.ByteArray));
+                formItems.Add(new FormItem("cover_photo_url", SerializationUtilities.SerializeToByteArr(updateUserDto.CoverPhoto), EFormItemType.ByteArray));
+            }
+
+            var response = await _apiRequest.PatchRequestForm($"{UserEndpoint}/{_signedInUser.Id}", formItems: formItems.ToArray(), cancellationToken: token);
+            if (response.IsSuccess)
+            {
+                _signedInUser.ShowGender = updateUserDto.ShowGender ?? false;
+                _signedInUser.ShowAge = updateUserDto.ShowAge ?? false;
+                _signedInUser.ShowFlag = updateUserDto.ShowFlag ?? false;
+
+                _signedInUser.Name = updateUserDto.Name ?? _signedInUser.Name;
+                _signedInUser.Status = updateUserDto.Status ?? _signedInUser.Status;
+                _signedInUser.Email = updateUserDto.Email ?? _signedInUser.Email;
+                _signedInUser.AvailabilityForDm = updateUserDto.AvailabilityForDm ?? _signedInUser.AvailabilityForDm;
+                _signedInUser.Birthdate = updateUserDto.Birthdate ?? _signedInUser.Birthdate;
+                _signedInUser.CoverPhotoPic = updateUserDto.CoverPhoto;
+                return Result<User>.Success(_signedInUser);
             }
             return Result<User>.Failure(response.ErrorMessage);
         }
