@@ -205,11 +205,14 @@ namespace BalootApi
         public string SenderId;
         [JsonProperty("user2_id")]
         public int ReceiverId;
+        [JsonProperty("relation_type")]
+        public string RelationType;
 
-        public SendFriendRequestDto(string senderId, int receiverId)
+        public SendFriendRequestDto(string senderId, int receiverId, string relationType = "friend")
         {
             SenderId = senderId;
             ReceiverId = receiverId;
+            RelationType = relationType;
         }
     }
     [Serializable]

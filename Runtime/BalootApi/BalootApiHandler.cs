@@ -40,6 +40,8 @@ namespace BalootApi
         UniTask<Result<Void>> RemoveFriend(User user, CancellationToken token = default);
         UniTask<Result<Void>> BlockUser(User user, CancellationToken token = default);
         UniTask<Result<Void>> UnblockUser(User user, CancellationToken token = default);
+        UniTask<Result<Void>> BlackListUser(User user, CancellationToken token = default);
+        UniTask<Result<Void>> UnBlackListUser(User user, CancellationToken token = default);
         UniTask<Result<Void>> UpdateProfilePicture(Texture picture, CancellationToken token = default);
         UniTask<Result<Void>> UpdateStatus(string status, CancellationToken token = default);
 
@@ -578,12 +580,15 @@ namespace BalootApi
 
         public async UniTask<Result<Void>> BlockUser(User user, CancellationToken token = default)
         {
-            throw new NotImplementedException();
+            var json = JsonConvert.SerializeObject(new SendFriendRequestDto(_signedInUser.Id, int.Parse(user.Id), "block"));
+            var response = await _apiRequest.PostRequest($"relations/create", json, cancellationToken: token);
+            return response.ToResult();
         }
 
         public async UniTask<Result<Void>> UnblockUser(User user, CancellationToken token = default)
         {
-            throw new NotImplementedException();
+            var response = await _apiRequest.DeleteRequest($"relations/{user.Id}", cancellationToken: token);
+            return response.ToResult();
         }
 
         public async UniTask<Result<Void>> UpdateProfilePicture(Texture picture, CancellationToken token = default)
@@ -1166,7 +1171,18 @@ namespace BalootApi
             return false;
         }
 
+        public async UniTask<Result<Void>> BlackListUser(User user, CancellationToken token = default)
+        {
+            var json = JsonConvert.SerializeObject(new SendFriendRequestDto(_signedInUser.Id, int.Parse(user.Id), "blacklist"));
+            var response = await _apiRequest.PostRequest($"relations/create", json, cancellationToken: token);
+            return response.ToResult();
+        }
 
+        public async UniTask<Result<Void>> UnBlackListUser(User user, CancellationToken token = default)
+        {
+            var response = await _apiRequest.PostRequest($"relations/{user.Id}", cancellationToken: token);
+            return response.ToResult();
+        }
     }
 
     public struct OnUserLogin
