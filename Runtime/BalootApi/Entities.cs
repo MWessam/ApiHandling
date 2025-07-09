@@ -47,6 +47,13 @@ namespace BalootApi
         ShowGender = 2,
         ShowAge = 4,
     }
+    public enum EUserRelation
+    {
+        None,
+        Friend,
+        Blacklisted,
+        Blocked,
+    }
     [Serializable]
     public class Inventory
     {
@@ -183,6 +190,7 @@ namespace BalootApi
         public bool IsFollowing { get; set; }
 
         public bool IsFriend { get; set; }
+        public EUserRelation RelationType { get; set; } = EUserRelation.None;
 
         public List<BaseNotification> Notifications { get; set; } = new();
         public List<Item> Inventory { get; set; } = new();

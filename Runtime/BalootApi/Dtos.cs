@@ -161,6 +161,8 @@ namespace BalootApi
         public bool IsFriend;
         [JsonProperty("is_following")]
         public bool IsFollowing;
+        [JsonProperty("relation_type")]
+        public string RelationType { get; set; }
         public string Email { get; set; }
         //Matches "nationality"
         public ENationalityType Nationality { get; set; }

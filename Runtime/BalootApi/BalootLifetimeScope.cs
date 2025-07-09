@@ -10,6 +10,8 @@ using VContainer.Unity;
 public class BalootLifetimeScope : LifetimeScope
 {
     [SerializeField] protected ApiConfigSO _apiConfig;
+    [SerializeField] protected WebSocketConnection _webSocketConnection;
+
     public new static IObjectResolver Resolver;
     protected override void Awake()
     {
@@ -20,7 +22,14 @@ public class BalootLifetimeScope : LifetimeScope
     protected override void Configure(IContainerBuilder builder)
     {
         base.Configure(builder);
-        builder.RegisterInstance(_apiConfig);
+        if (_apiConfig)
+        {
+            builder.RegisterInstance(_apiConfig);
+        }
+        if (_webSocketConnection)
+        {
+            builder.RegisterInstance(_webSocketConnection);
+        }
         builder.Register<IApiHandler, BalootApiHandler>(Lifetime.Singleton);
         builder.Register<IApiRequest, ApiRequest>(Lifetime.Singleton);
         builder.Register<IAuthService, AuthService>(Lifetime.Singleton);

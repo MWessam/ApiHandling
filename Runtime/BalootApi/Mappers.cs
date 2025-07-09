@@ -21,11 +21,13 @@ namespace BalootApi
             TypeAdapterConfig<RelationDto, UserDto>.NewConfig()
                 .Map(dest => dest, src => src.User)
                 .Ignore(dest => dest.IsFriend)
+                .Ignore(dest => dest.RelationType)
                 .AfterMapping((src, dest) =>
                 {
                     if (src.Accepted && src.RelationType == "friend")
                     {
                         dest.IsFriend = true;
+                        dest.RelationType = src.RelationType;
                     }
                 });
 
@@ -72,6 +74,21 @@ namespace BalootApi
                     dest.ShowGender = (bitmask & (1 << 0)) != 0;  // Bit 0: Show Gender
                     dest.ShowAge = (bitmask & (1 << 1)) != 0;     // Bit 1: Show Age
                     dest.ShowFlag = (bitmask & (1 << 2)) != 0;    // Bit 2: Show Flag
+                    if (src.RelationType != null)
+                    {
+                        switch (src.RelationType)
+                        {
+                            case "friend":
+                                dest.RelationType = EUserRelation.Friend;
+                                break;
+                            case "blacklist":
+                                dest.RelationType = EUserRelation.Blacklisted;
+                                break;
+                            case "blocked":
+                                dest.RelationType = EUserRelation.Blocked;
+                                break;
+                        }
+                    }
                 });
 
         }
