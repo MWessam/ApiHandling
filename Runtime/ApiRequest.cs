@@ -182,9 +182,15 @@ namespace ApiHandling.Runtime
             }
         }
 
+        private void AddNgrokSkipHeader(UnityWebRequest request)
+        {
+            request.SetRequestHeader("ngrok-skip-browser-warning", "1");
+        }
+
         private async UniTask<Result<string>> SendRequest(UnityWebRequest request, CancellationToken cancellationToken = default)
         {
             AddAuthHeader(request);
+            AddNgrokSkipHeader(request);
             using (request)
             {
                 try
