@@ -6,7 +6,6 @@ using Cysharp.Threading.Tasks;
 using Mapster;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using SocketIOClient;
 using UnityEngine;
 using VContainer;
 
@@ -104,7 +103,7 @@ namespace BalootApi
             SocketConnection.SubscribeTo(LobbyWebSocketEventNames.LISTEN_KICKED_FROM_LOBBY, "lobby", OnKickedFromLobby);
             SocketConnection.SubscribeTo(LobbyWebSocketEventNames.LISTEN_PROPAGATE_MATCHMAKING_TICKET, "lobby",OnReceiveTicketId);
         }
-        void OnReceiveTicketId(SocketIOResponse response)
+        void OnReceiveTicketId(string response)
         {
             var str=response.ToString();
             Debug.Log(str);
@@ -112,16 +111,16 @@ namespace BalootApi
             ApiEventBus<OnReceiveTicketId>.Raise(new(ticketResponseEntity));
         }
 
-        private void OnNotificationReceived(SocketIOResponse obj)
+        private void OnNotificationReceived(string obj)
         {
             OnNotificationReceivedAsync(obj).Forget();
 
         }
-        private void OnLobbyInvitationReceived(SocketIOResponse response)
+        private void OnLobbyInvitationReceived(string response)
         {
             OnLobbyInvitationReceivedAsync(response).Forget();
         }
-        private async UniTask OnNotificationReceivedAsync(SocketIOResponse response)
+        private async UniTask OnNotificationReceivedAsync(string response)
         {
             var str = response.ToString();
             var json = JArray.Parse(str);
@@ -138,7 +137,7 @@ namespace BalootApi
             }
             ApiEventBus<NotificationReceivedEvent>.Raise(new());
         }
-        private async UniTask OnLobbyInvitationReceivedAsync(SocketIOResponse obj)
+        private async UniTask OnLobbyInvitationReceivedAsync(string obj)
         {
             var str = obj.ToString();
             var json = JArray.Parse(str);
@@ -166,21 +165,21 @@ namespace BalootApi
             }
         }
 
-        private void OnKickedFromLobby(SocketIOResponse response)
+        private void OnKickedFromLobby(string response)
         {
             ApiEventBus<OnLobbyLeft>.Raise(new());
         }
 
-        private void OnLeftLobby(SocketIOResponse response)
+        private void OnLeftLobby(string response)
         {
             ApiEventBus<OnLobbyLeft>.Raise(new());
         }
 
-        private void OnLobbyUpdated(SocketIOResponse response)
+        private void OnLobbyUpdated(string response)
         {
             OnLobbyUpdatedAsync(response).Forget();
         }
-        private async UniTask OnLobbyUpdatedAsync(SocketIOResponse response)
+        private async UniTask OnLobbyUpdatedAsync(string response)
         {
             var str = response.ToString();
             //Debug.Log($"OnLobbyUpdatedAsync:{str}");
