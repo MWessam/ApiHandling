@@ -1,4 +1,5 @@
-﻿using System;
+﻿
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -53,6 +54,18 @@ namespace BalootApi
         Friend,
         Blacklisted,
         Blocked,
+    }
+    public enum EPresenceType
+    {
+        None = 0,
+        Offline = 1,
+        Online=2
+    }
+    public enum EUserRoleType
+    {
+        None = 0,
+        Teacher = 1,
+        Student=2
     }
     [Serializable]
     public class Inventory
@@ -199,6 +212,12 @@ namespace BalootApi
         public bool ShowGender { get; set; }
         public bool ShowAge { get; set; }
         public bool ShowFlag { get; set; }
+
+        public EPresenceType PresenceType { get; set; }
+        public EUserRoleType UserRole { get; set; }
+        public int HoursSpentInClass { get; set; }
+        public int AttendedClassesCount { get; set; }
+        public string ReadyPlayerMeAvatarId { get; set; }
     }
     public class CreateUserEntity
     {

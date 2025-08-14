@@ -28,7 +28,6 @@ namespace BalootApi
             User = userDto;
             AccessToken = accessToken;
         }
-
     }
     [Serializable]
     [JsonObject(NamingStrategyType = typeof(SnakeCaseNamingStrategy))]
@@ -38,11 +37,13 @@ namespace BalootApi
         public string Password;
         public string Name;
         public string Email;
-        public RegisterDto(string userHandle, string password, string name, string email = "")
+        public int UserRole;
+        public RegisterDto(string userHandle, string password, string name,int userRole ,string email = "")
         {
             UserHandle = userHandle;
             Password = password;
             Name = name;
+            UserRole = userRole;
             Email = email;
         }
     }
@@ -169,6 +170,17 @@ namespace BalootApi
 
         public int ShowOptions { get; set; }
         public DateTime? Birthdate { get; set; }
+        [JsonProperty("presence_type")]
+        public EPresenceType PresenceType { get; set; }
+        [JsonProperty("user_role")]
+        public EUserRoleType UserRole { get; set; }
+        [JsonProperty("hours_spent_in_class")]
+        public int HoursSpentInClass { get; set; }
+        [JsonProperty("attended_classes_count")]
+        public int AttendedClassesCount { get; set; }
+        [JsonProperty("ready_player_me_avatar_id")]
+        public string ReadyPlayerMeAvatarId { get; set; }
+
     }
     [Serializable]
     [JsonObject(NamingStrategyType = typeof(SnakeCaseNamingStrategy))]
@@ -183,6 +195,11 @@ namespace BalootApi
         public bool? AvailabilityForDm { get; set; }
 
         public int? Nationality { get; set; }
+
+        public int? PresenceType{ get; set; }
+        public int? HoursSpentInClass{ get; set; }
+        public int? AttendedClassesCount{ get; set; }
+        public string? ReadyPlayerMeAvatarId{ get; set; }
 
         public DateTime? Birthdate { get; set; }
         public bool? ShowGender { get; set; }
