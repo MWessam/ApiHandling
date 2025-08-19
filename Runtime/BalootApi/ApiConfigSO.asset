@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 08b0428e4af9eea4bbd755e4f9e50eae, type: 3}
   m_Name: ApiConfigSO
   m_EditorClassIdentifier: 
-  ApiUrl: localhost:3000
-  SocketUri: ws://16.171.168.69
+  ApiUrl: http://192.168.1.101:3000
+  SocketUris: []

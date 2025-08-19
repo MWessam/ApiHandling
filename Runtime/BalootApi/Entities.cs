@@ -219,6 +219,20 @@ namespace BalootApi
         public int AttendedClassesCount { get; set; }
         public string ReadyPlayerMeAvatarId { get; set; }
     }
+    public static class UserExtensions
+    {
+        public static int GetAge(this User user)
+        {
+            var today = DateTime.Today;
+            var age = today.Year - user.Birthdate.Year;
+            
+            // Subtract one year if the birthday hasn't occurred this year yet
+            if (user.Birthdate.Date > today.AddYears(-age))
+                age--;
+                
+            return age;
+        }
+    }
     public class CreateUserEntity
     {
         public string LoginToken { get; set; }
