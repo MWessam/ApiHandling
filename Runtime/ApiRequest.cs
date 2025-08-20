@@ -306,6 +306,9 @@ namespace ApiHandling.Runtime
                     case EFormItemType.ByteArray:
                         form.AddBinaryData(item.Key, (byte[])item.Value);
                         break;
+                    case EFormItemType.IntegerValue:
+                        form.AddField(item.Key, item.Value.ToString());
+                        break;
                     default:
                         Debug.LogError($"{item.Type} is not supported!");
                         return Result<string>.Failure(EResultError.InvalidInput, $"{item.Type} is not supported!");
@@ -343,5 +346,6 @@ namespace ApiHandling.Runtime
     {
         StringValue,
         ByteArray,
+        IntegerValue
     }
 }

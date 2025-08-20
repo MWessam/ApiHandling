@@ -15,6 +15,7 @@ using VContainer.Unity;
 using Void = ApiHandling.Runtime.Void;
 using ApiHandling.Runtime.Utilities;
 using UnityEngine.Networking;
+using Newtonsoft.Json.Serialization;
 
 namespace BalootApi
 {
@@ -320,45 +321,90 @@ namespace BalootApi
             _signedInUser.ShowGender = updateUserDto.ShowGender ?? false;
             _signedInUser.ShowAge = updateUserDto.ShowAge ?? false;
             _signedInUser.ShowFlag = updateUserDto.ShowFlag ?? false;
-
+        
             // Convert the booleans in updateuserdto to bitmask
             int bitmask = 0;
             if (updateUserDto.ShowGender == true) bitmask |= 1 << 0;
             if (updateUserDto.ShowAge == true) bitmask |= 1 << 1;
             if (updateUserDto.ShowFlag == true) bitmask |= 1 << 2;
-
+        
+            // Separate fields that need form data (files) vs JSON data
             List<FormItem> formItems = new List<FormItem>();
-            if (updateUserDto.Name != null)
-                formItems.Add(new FormItem("name", updateUserDto.Name, EFormItemType.StringValue));
-            if (updateUserDto.Status != null)
-                formItems.Add(new FormItem("status", updateUserDto.Status, EFormItemType.StringValue));
-            if (updateUserDto.Email != null)
-                formItems.Add(new FormItem("email", updateUserDto.Email, EFormItemType.StringValue));
-            if (updateUserDto.AvailabilityForDm != null)
-                formItems.Add(new FormItem("availability_for_dm", updateUserDto.AvailabilityForDm.Value.ToString(), EFormItemType.StringValue));
-            if (updateUserDto.Birthdate != null)
-                formItems.Add(new FormItem("birth_date", updateUserDto.Birthdate.Value.ToString(), EFormItemType.StringValue));
-            if (bitmask >= 0 && updateUserDto.ShowAge != null && updateUserDto.ShowGender != null && updateUserDto.ShowFlag != null)
-            {
-                formItems.Add(new FormItem("show_options_bitmask", bitmask, EFormItemType.StringValue));
-            }
-            if (updateUserDto.IsAnonymous != null)
-                formItems.Add(new FormItem("is_anonymous", updateUserDto.IsAnonymous.Value.ToString(), EFormItemType.StringValue));
-            if (updateUserDto.IsMale != null)
-                formItems.Add(new FormItem("is_male", updateUserDto.IsMale.Value.ToString(), EFormItemType.StringValue));
+            bool hasFileUploads = false;
+        
+            // Handle file uploads with form data
             if (updateUserDto.CoverPhoto != null)
             {
+                hasFileUploads = true;
                 formItems.Add(new FormItem("cover_photo", SerializationUtilities.SerializeToByteArr(updateUserDto.CoverPhoto), EFormItemType.ByteArray));
                 formItems.Add(new FormItem("cover_photo_url", SerializationUtilities.SerializeToByteArr(updateUserDto.CoverPhoto), EFormItemType.ByteArray));
             }
-
-            var response = await _apiRequest.PatchRequestForm($"{UserEndpoint}/{_signedInUser.Id}", formItems: formItems.ToArray(), cancellationToken: token);
+        
+            // Create JSON object for non-file fields
+            var jsonData = new Dictionary<string, object>();
+            
+            if (updateUserDto.Name != null)
+                jsonData["name"] = updateUserDto.Name;
+            if (updateUserDto.Status != null)
+                jsonData["status"] = updateUserDto.Status;
+            if (updateUserDto.Email != null)
+                jsonData["email"] = updateUserDto.Email;
+            if (updateUserDto.AvailabilityForDm != null)
+                jsonData["availability_for_dm"] = updateUserDto.AvailabilityForDm.Value;
+            if (updateUserDto.Birthdate != null)
+                jsonData["birth_date"] = updateUserDto.Birthdate.Value.ToString("yyyy-MM-dd"); // or whatever format your API expects
+            if (updateUserDto.ShowAge != null && updateUserDto.ShowGender != null && updateUserDto.ShowFlag != null)
+                jsonData["show_options_bitmask"] = bitmask;
+            if (updateUserDto.IsAnonymous != null)
+                jsonData["is_anonymous"] = updateUserDto.IsAnonymous.Value;
+            if (updateUserDto.IsMale != null)
+                jsonData["is_male"] = updateUserDto.IsMale.Value;
+            if (updateUserDto.PresenceType > 0)
+                jsonData["presence_type"] = updateUserDto.PresenceType.Value;
+            if (updateUserDto.AttendedClassesCount > 0)
+                jsonData["attended_classes_count"] = updateUserDto.AttendedClassesCount.Value;
+            if (updateUserDto.HoursSpentInClass > 0)
+                jsonData["hours_spent_in_class"] = updateUserDto.HoursSpentInClass.Value;
+        
+            Result<string> response;
+        
+            if (hasFileUploads && jsonData.Count > 0)
+            {
+                // Mixed content: both files and JSON data
+                // Add JSON fields to form data as strings (compromise solution)
+                foreach (var kvp in jsonData)
+                {
+                    if (kvp.Value is bool boolVal)
+                        formItems.Add(new FormItem(kvp.Key, boolVal.ToString().ToLower(), EFormItemType.StringValue));
+                    else if (kvp.Value is int intVal)
+                        formItems.Add(new FormItem(kvp.Key, intVal.ToString(), EFormItemType.StringValue));
+                    else
+                        formItems.Add(new FormItem(kvp.Key, kvp.Value.ToString(), EFormItemType.StringValue));
+                }
+                response = await _apiRequest.PatchRequestForm($"{UserEndpoint}/{_signedInUser.Id}", formItems: formItems.ToArray(), cancellationToken: token);
+            }
+            else if (hasFileUploads)
+            {
+                // Only file uploads
+                response = await _apiRequest.PatchRequestForm($"{UserEndpoint}/{_signedInUser.Id}", formItems: formItems.ToArray(), cancellationToken: token);
+            }
+            else
+            {
+                // Only JSON data - use PatchRequest
+                string jsonBody = JsonConvert.SerializeObject(jsonData, new JsonSerializerSettings
+                {
+                    NullValueHandling = NullValueHandling.Ignore,
+                    ContractResolver = new CamelCasePropertyNamesContractResolver()
+                });
+                response = await _apiRequest.PatchRequest($"{UserEndpoint}/{_signedInUser.Id}", jsonBody, token);
+            }
+        
             if (response.IsSuccess)
             {
                 _signedInUser.ShowGender = updateUserDto.ShowGender ?? false;
                 _signedInUser.ShowAge = updateUserDto.ShowAge ?? false;
                 _signedInUser.ShowFlag = updateUserDto.ShowFlag ?? false;
-
+        
                 _signedInUser.Name = updateUserDto.Name ?? _signedInUser.Name;
                 _signedInUser.Status = updateUserDto.Status ?? _signedInUser.Status;
                 _signedInUser.Email = updateUserDto.Email ?? _signedInUser.Email;
