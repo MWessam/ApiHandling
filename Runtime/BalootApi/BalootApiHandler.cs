@@ -85,8 +85,8 @@ namespace BalootApi
 
         UniTask<Result<Room>> CreateRoom(string roomName, int maxMemberCount = 30, bool isPrivate = true,
             TimeSpan lifetime = new TimeSpan(),
-            int logoIndex = 0, CancellationToken token = default);
-
+            int logoIndex = 0,DateTime scheduleDateTime=default, CancellationToken token = default);
+        UniTask<Result<string>> UpdateRoom(UpdateRoomDto updateRoomDto, CancellationToken token = default);
         UniTask<Result<List<Room>>> GetUserRooms(CancellationToken token = default);
         UniTask<Result<List<Room>>> GetRooms(string name = "", int kingdom = -1, CancellationToken token = default);
         UniTask<Result<Void>> LeaveRoom(Room room, CancellationToken token = default);
@@ -131,6 +131,7 @@ namespace BalootApi
     public class BalootApiHandler : IApiHandler
     {
         private User _signedInUser;
+        private List<Room> _cachedRooms;
         private readonly IApiRequest _apiRequest;
         private readonly IAuthService _authService;
 
@@ -579,7 +580,7 @@ namespace BalootApi
             }
             return Result<List<User>>.Failure(result.ErrorMessage);
         }
-
+        
         public async UniTask<Result<List<User>>> GetFriendRequests(int page = 0, int pageSize = 30, CancellationToken token = default)
         {
             var result = await _apiRequest.GetRequest($"relations/requests??page={page}&page_size={pageSize}", token);
@@ -1092,8 +1093,12 @@ namespace BalootApi
         }
 
         public async UniTask<Result<Room>> CreateRoom(string roomName, int maxMemberCount = 30, bool isPrivate = true, TimeSpan lifetime = new TimeSpan(),
-            int logoIndex = 0, CancellationToken token = default)
+            int logoIndex = 0,DateTime scheduledDateTIme=default, CancellationToken token = default)
         {
+            if (scheduledDateTIme==default)
+            {
+                return Result<Room>.Failure(EResultError.Unknown,"ERROR: YOU NEED TO ENTER A VALID DATE TIME FOR SCHEDULE");
+            }
             var roomDto = new RoomDto
             {
                 Name = roomName,
@@ -1101,7 +1106,8 @@ namespace BalootApi
                 Lifetime = 9999,
                 MaxMemberCount = maxMemberCount,
                 Logo = logoIndex,
-                OwnerId = _signedInUser.Id
+                OwnerId = _signedInUser.Id,
+                ScheduledDateTime=scheduledDateTIme
             };
             var result = await _apiRequest.PostRequest(RoomEndpoint, JsonConvert.SerializeObject(roomDto), token);
             if (result.IsSuccess)
@@ -1111,6 +1117,44 @@ namespace BalootApi
                 return Result<Room>.Success(room);
             }
             return Result<Room>.Failure(result.ErrorMessage);
+        }
+        public async UniTask<Result<string>> UpdateRoom(UpdateRoomDto updateRoomDto, CancellationToken token = default)
+        {
+            if (int.Parse(updateRoomDto.Id) <= 0) return Result<string>.Failure(EResultError.Unknown,"ERROR: ENTER THE ROOM ID IN THE PASSED UPDATE ROOM DTO");
+            var jsonData = new Dictionary<string, object>();
+            if (updateRoomDto.StatusType > 0)
+            {
+                jsonData["status_type"] = updateRoomDto.StatusType;
+            }
+            if (updateRoomDto.DeploymentIPAddress != null)
+            {
+                jsonData["deployment_ip_address"] = updateRoomDto.DeploymentIPAddress;
+            }
+            if (updateRoomDto.DeploymentPort != null)
+            {
+                jsonData["deployment_port"] = updateRoomDto.DeploymentPort;
+            }
+            if (updateRoomDto.AppVersion != null)
+            {
+                jsonData["app_version"] = updateRoomDto.AppVersion;
+            }
+
+            Result<string> response;
+            string jsonBody = JsonConvert.SerializeObject(jsonData, new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore,
+                ContractResolver = new CamelCasePropertyNamesContractResolver()
+            });
+            response = await _apiRequest.PatchRequest($"{UserEndpoint}/{_signedInUser.Id}", jsonBody, token);
+            if (response.IsSuccess)
+            {
+                var matchingRoom=_cachedRooms.FirstOrDefault(r => r.Id == updateRoomDto.Id);
+                matchingRoom.DeploymentIPAddress = updateRoomDto.DeploymentIPAddress ?? matchingRoom.DeploymentIPAddress;
+                matchingRoom.DeploymentPort = updateRoomDto.DeploymentPort ?? matchingRoom.DeploymentPort;
+                matchingRoom.StatusType = updateRoomDto.StatusType >0?(ECalendarClassStatus)updateRoomDto.StatusType: matchingRoom.StatusType;
+                return Result<string>.Success(updateRoomDto.Id);
+            }
+            return Result<string>.Failure(response.ErrorMessage);
         }
         public async UniTask<Result<List<Room>>> GetUserRooms(CancellationToken token = default)
         {
@@ -1162,6 +1206,7 @@ namespace BalootApi
                 }
 
                 var rooms = roomsDto.Data.Adapt<List<Room>>();
+                _cachedRooms = rooms;
                 return Result<List<Room>>.Success(rooms);
             }
             return Result<List<Room>>.Failure(result.ErrorMessage);

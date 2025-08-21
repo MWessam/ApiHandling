@@ -264,6 +264,25 @@ namespace BalootApi
         public User Owner;
         public int MemberCount;
         public ENationalityType Nationality;
+        public DateTime ScheduledDateTime{ get; set; }
+        public ECalendarClassStatus StatusType{ get; set; }
+        public string DeploymentIPAddress{ get; set; }
+        public string DeploymentPort{ get; set; }
+        public string AppVersion{ get; set; }
+    }
+    public struct GameSessionMetadata
+    {
+        //contains all the connection details needed
+        public string IpAddress;
+        public string Port;
+    }
+    public enum ECalendarClassStatus
+    {
+        Scheduled = 1,
+        InProgress = 2,
+        Completed = 3,
+        Cancelled = 4,
+        None=0
     }
     [Serializable]
     public class LobbyMember

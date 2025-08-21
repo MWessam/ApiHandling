@@ -452,6 +452,32 @@ namespace BalootApi
         public bool IsMember;
         public int MemberCount;
         public ENationalityType Nationality;
+        public DateTime ScheduledDateTime{ get; set; }
+        public ECalendarClassStatus? StatusType{ get; set; }
+        public string DeploymentIPAddress{ get; set; }
+        public string DeploymentPort{ get; set; }
+        public string AppVersion{ get; set; }
+    }
+    [JsonObject(NamingStrategyType = typeof(SnakeCaseNamingStrategy))]
+    public struct UpdateRoomDto
+    {
+        public string Id;
+        public string Name;
+        public int MaxMemberCount;
+        public bool IsPrivate;
+        public int Lifetime;
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public int Logo;
+        public string OwnerId;
+        public bool IsOwner;
+        public bool IsMember;
+        public int MemberCount;
+        public int? Nationality;
+        public DateTime ScheduledDateTime{ get; set; }
+        public int StatusType{ get; set; }
+        public string DeploymentIPAddress{ get; set; }
+        public string DeploymentPort{ get; set; }
+        public string AppVersion{ get; set; }
     }
     #endregion
 
