@@ -1122,6 +1122,10 @@ namespace BalootApi
         {
             if (int.Parse(updateRoomDto.Id) <= 0) return Result<string>.Failure(EResultError.Unknown,"ERROR: ENTER THE ROOM ID IN THE PASSED UPDATE ROOM DTO");
             var jsonData = new Dictionary<string, object>();
+            if (updateRoomDto.ScheduledDateTime != null)
+            {
+                jsonData["scheduled_date_time"] = updateRoomDto.ScheduledDateTime;
+            }
             if (updateRoomDto.StatusType > 0)
             {
                 jsonData["status_type"] = updateRoomDto.StatusType;
@@ -1149,6 +1153,7 @@ namespace BalootApi
             if (response.IsSuccess)
             {
                 var matchingRoom=_cachedRooms.FirstOrDefault(r => r.Id == updateRoomDto.Id);
+                matchingRoom.ScheduledDateTime = updateRoomDto.ScheduledDateTime==default ? matchingRoom.ScheduledDateTime:updateRoomDto.ScheduledDateTime;
                 matchingRoom.DeploymentIPAddress = updateRoomDto.DeploymentIPAddress ?? matchingRoom.DeploymentIPAddress;
                 matchingRoom.DeploymentPort = updateRoomDto.DeploymentPort ?? matchingRoom.DeploymentPort;
                 matchingRoom.StatusType = updateRoomDto.StatusType >0?(ECalendarClassStatus)updateRoomDto.StatusType: matchingRoom.StatusType;
