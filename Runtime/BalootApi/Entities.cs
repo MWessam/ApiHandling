@@ -264,7 +264,7 @@ namespace BalootApi
         public User Owner;
         public int MemberCount;
         public ENationalityType Nationality;
-        public DateTime ScheduledDateTime{ get; set; }
+        public DateTime? ScheduledDateTime{ get; set; }
         public ECalendarClassStatus StatusType{ get; set; }
         public string DeploymentIPAddress{ get; set; }
         public string DeploymentPort{ get; set; }

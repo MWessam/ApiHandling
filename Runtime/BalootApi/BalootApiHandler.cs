@@ -91,6 +91,8 @@ namespace BalootApi
         UniTask<Result<List<Room>>> GetRooms(string name = "", int kingdom = -1, CancellationToken token = default);
         UniTask<Result<Void>> LeaveRoom(Room room, CancellationToken token = default);
         UniTask<Result<Void>> JoinRoom(Room room, CancellationToken token = default);
+        UniTask<Result<Void>> JoinRoomDirect(Room room, CancellationToken token = default);
+        UniTask<Result<RoomMembershipStatus>> CheckRoomMembership(Room room, CancellationToken token = default);
         UniTask<Result<Void>> DeleteRoom(Room room, CancellationToken token = default);
 
         UniTask<Result<List<Tournament>>> GetTournaments(int page = 0, int pageSize = 10,
@@ -116,7 +118,13 @@ namespace BalootApi
 
         UniTask<Result<Void>> AdminUpdateNItems(List<Item> items, CancellationToken token = default);
     }
-
+    // Add this new data structure for membership status
+    public class RoomMembershipStatus
+    {
+        public bool IsMember { get; set; }
+        public string Role { get; set; } // "Owner", "Admin", "Member", or null
+        public bool IsRequesting { get; set; }
+    }
     public abstract class BaseBalootApiCommand<T> : BaseApiCommand<T>
     {
         protected IApiHandler ApiHandler;
@@ -155,6 +163,8 @@ namespace BalootApi
         private const string GoldenPostEndpoint = "posts/golden";
         private const string RoomEndpoint = "room";
         private const string AddMemberToRoomEndpoint = "room/add-member";
+        private const string RoomJoinEndpoint = "room/join";
+        private const string RoomMembershipEndpoint = "room/membership";
         private const string TournamentEndpoint = "tournament";
         private const string AuthEndpoint = "auth";
         private const string LoginTokenEndpoint = "auth/login-token";
@@ -1228,7 +1238,21 @@ namespace BalootApi
             var request = await _apiRequest.PostRequest($"{RoomEndpoint}/request-join/{room.Id}", cancellationToken:token);
             return request;
         }
-
+        public async UniTask<Result<Void>> JoinRoomDirect(Room room, CancellationToken token = default)
+        {
+            var request = await _apiRequest.PostRequest($"{RoomJoinEndpoint}/{room.Id}", cancellationToken: token);
+            return request;
+        }
+        public async UniTask<Result<RoomMembershipStatus>> CheckRoomMembership(Room room, CancellationToken token = default)
+        {
+            var result = await _apiRequest.GetRequest($"{RoomMembershipEndpoint}/{room.Id}", token);
+            if (result.IsSuccess)
+            {
+                var membershipData = JsonConvert.DeserializeObject<RoomMembershipStatus>(result.Value);
+                return Result<RoomMembershipStatus>.Success(membershipData);
+            }
+            return Result<RoomMembershipStatus>.Failure(result.ErrorMessage);
+        }
         public async UniTask<Result<Void>> DeleteRoom(Room room, CancellationToken token = default)
         {
             var request = await _apiRequest.DeleteRequest($"{RoomEndpoint}/{room.Id}", token);
