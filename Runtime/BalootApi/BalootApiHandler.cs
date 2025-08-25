@@ -1241,6 +1241,15 @@ namespace BalootApi
         public async UniTask<Result<Void>> JoinRoomDirect(Room room, CancellationToken token = default)
         {
             var request = await _apiRequest.PostRequest($"{RoomJoinEndpoint}/{room.Id}", cancellationToken: token);
+            if (request.IsSuccess)
+            {
+                //update the room
+                var matchingRoom = _cachedRooms.FirstOrDefault(r => r.Id == room.Id);
+                if (matchingRoom!=null)
+                {
+                    matchingRoom.IsMember = true;
+                }
+            }
             return request;
         }
         public async UniTask<Result<RoomMembershipStatus>> CheckRoomMembership(Room room, CancellationToken token = default)
