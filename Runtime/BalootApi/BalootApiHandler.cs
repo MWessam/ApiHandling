@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -114,6 +114,37 @@ namespace BalootApi
         UniTask<Result<Texture2D>> DownloadTexture(string photoUrl, CancellationToken token = default);
 
         UniTask<Result<Void>> AdminUpdateNItems(List<Item> items, CancellationToken token = default);
+
+        #region MMO
+        UniTask<Result<List<Zone>>> GetZones(CancellationToken token = default);
+        UniTask<Result<Zone>> GetZone(int id, CancellationToken token = default);
+        UniTask<Result<Zone>> CreateZone(Zone zone, CancellationToken token = default);
+        UniTask<Result<Zone>> UpdateZone(int id, Zone zone, CancellationToken token = default);
+        UniTask<Result<Void>> DeleteZone(int id, CancellationToken token = default);
+
+        UniTask<Result<List<WorldEntity>>> GetWorldEntities(string zoneId, CancellationToken token = default);
+        UniTask<Result<WorldEntity>> GetWorldEntity(int id, CancellationToken token = default);
+        UniTask<Result<WorldEntity>> CreateWorldEntity(WorldEntity worldEntity, CancellationToken token = default);
+        UniTask<Result<WorldEntity>> UpdateWorldEntity(int id, WorldEntity worldEntity, CancellationToken token = default);
+        UniTask<Result<Void>> DeleteWorldEntity(int id, CancellationToken token = default);
+
+        UniTask<Result<List<Quest>>> GetQuests(CancellationToken token = default);
+        UniTask<Result<Quest>> GetQuest(int id, CancellationToken token = default);
+        UniTask<Result<Quest>> CreateQuest(Quest quest, CancellationToken token = default);
+        UniTask<Result<Quest>> UpdateQuest(int id, Quest quest, CancellationToken token = default);
+        UniTask<Result<Void>> DeleteQuest(int id, CancellationToken token = default);
+
+        UniTask<Result<PlayerStats>> GetPlayerStats(int playerId, CancellationToken token = default);
+        UniTask<Result<Void>> UpdatePlayerStat(int playerId, PlayerStats playerStats, CancellationToken token = default);
+        UniTask<Result<Void>> UpdatePlayerStats(int playerId, IEnumerable<PlayerStats> playerStats, CancellationToken token = default);
+
+        UniTask<Result<List<M2Player>>> GetM2Players(CancellationToken token = default);
+        UniTask<Result<M2Player>> GetMyM2Player(CancellationToken token = default);
+        UniTask<Result<M2Player>> GetM2Player(int id, CancellationToken token = default);
+        UniTask<Result<M2Player>> CreateM2Player(M2Player m2Player, CancellationToken token = default);
+        UniTask<Result<M2Player>> UpdateM2Player(int id, M2Player m2Player, CancellationToken token = default);
+        UniTask<Result<Void>> DeleteM2Player(int id, CancellationToken token = default);
+        #endregion
     }
 
     public abstract class BaseBalootApiCommand<T> : BaseApiCommand<T>
@@ -161,6 +192,13 @@ namespace BalootApi
         private const string RegisterTokenEndpoint = "auth/register-token";
         private string UpdateMemberRoleEndpoint(int roomId, int memberId) => $"room/{roomId}/member/{memberId}/role";
         private string GetUserRoomsEndpoint() => $"room/user/{_signedInUser.Id}";
+
+        private const string ZoneEndpoint = "zones";
+        private const string WorldEntityEndpoint = "world-entities";
+        private string GetWorldEntitiesEndpoint(string zoneId) => $"{WorldEntityEndpoint}/zone/{zoneId}";
+        private const string QuestEndpoint = "quests";
+        private const string PlayerStatsEndpoint = "player-stats";
+        private const string M2PlayerEndpoint = "m2-players";
 
         // A cache for users, keyed by userId.
         private readonly Dictionary<string, (User user, DateTime cachedAt)> _userCache = new();
@@ -1183,6 +1221,342 @@ namespace BalootApi
             var response = await _apiRequest.PostRequest($"relations/{user.Id}", cancellationToken: token);
             return response.ToResult();
         }
+
+        #region MMO
+        public async UniTask<Result<List<Zone>>> GetZones(CancellationToken token = default)
+        {
+            var response = await _apiRequest.GetRequest(ZoneEndpoint, token);
+            if (response.IsSuccess)
+            {
+                var dtos = JsonConvert.DeserializeObject<List<ZoneDto>>(response.Value);
+                var entities = dtos.Adapt<List<Zone>>();
+                return Result<List<Zone>>.Success(entities);
+            }
+            return Result<List<Zone>>.Failure(response.ErrorMessage);
+        }
+
+        public async UniTask<Result<Zone>> GetZone(int id, CancellationToken token = default)
+        {
+            var response = await _apiRequest.GetRequest($"{ZoneEndpoint}/{id}", token);
+            if (response.IsSuccess)
+            {
+                var dto = JsonConvert.DeserializeObject<ZoneDto>(response.Value);
+                var entity = dto.Adapt<Zone>();
+                return Result<Zone>.Success(entity);
+            }
+            return Result<Zone>.Failure(response.ErrorMessage);
+        }
+
+        public async UniTask<Result<Zone>> CreateZone(Zone zone, CancellationToken token = default)
+        {
+            var json = JsonConvert.SerializeObject(zone.Adapt<ZoneDto>());
+            var response = await _apiRequest.PostRequest(ZoneEndpoint, json, token);
+            if (response.IsSuccess)
+            {
+                var dto = JsonConvert.DeserializeObject<ZoneDto>(response.Value);
+                var entity = dto.Adapt<Zone>();
+                return Result<Zone>.Success(entity);
+            }
+            return Result<Zone>.Failure(response.ErrorMessage);
+        }
+
+        public async UniTask<Result<Zone>> UpdateZone(int id, Zone zone, CancellationToken token = default)
+        {
+            var json = JsonConvert.SerializeObject(zone.Adapt<ZoneDto>());
+            var response = await _apiRequest.PatchRequest($"{ZoneEndpoint}/{id}", json, token);
+            if (response.IsSuccess)
+            {
+                var dto = JsonConvert.DeserializeObject<ZoneDto>(response.Value);
+                var entity = dto.Adapt<Zone>();
+                return Result<Zone>.Success(entity);
+            }
+            return Result<Zone>.Failure(response.ErrorMessage);
+        }
+
+        public async UniTask<Result<Void>> DeleteZone(int id, CancellationToken token = default)
+        {
+            return await _apiRequest.DeleteRequest($"{ZoneEndpoint}/{id}", token);
+        }
+
+        public async UniTask<Result<List<WorldEntity>>> GetWorldEntities(string zoneId, CancellationToken token = default)
+        {
+            var response = await _apiRequest.GetRequest($"{GetWorldEntitiesEndpoint(zoneId)}", token);
+            if (response.IsSuccess)
+            {
+                var dtos = JsonConvert.DeserializeObject<List<WorldEntityDto>>(response.Value);
+                var entities = dtos.Adapt<List<WorldEntity>>();
+                return Result<List<WorldEntity>>.Success(entities);
+            }
+            return Result<List<WorldEntity>>.Failure(response.ErrorMessage);
+        }
+
+        public async UniTask<Result<WorldEntity>> GetWorldEntity(int id, CancellationToken token = default)
+        {
+            var response = await _apiRequest.GetRequest($"{WorldEntityEndpoint}/{id}", token);
+            if (response.IsSuccess)
+            {
+                var dto = JsonConvert.DeserializeObject<WorldEntityDto>(response.Value);
+                var entity = dto.Adapt<WorldEntity>();
+                return Result<WorldEntity>.Success(entity);
+            }
+            return Result<WorldEntity>.Failure(response.ErrorMessage);
+        }
+
+        public async UniTask<Result<WorldEntity>> CreateWorldEntity(WorldEntity worldEntity, CancellationToken token = default)
+        {
+            var json = JsonConvert.SerializeObject(worldEntity.Adapt<WorldEntityDto>());
+            var response = await _apiRequest.PostRequest($"{WorldEntityEndpoint}/spawn", json, token);
+            if (response.IsSuccess)
+            {
+                var dto = JsonConvert.DeserializeObject<WorldEntityDto>(response.Value);
+                var entity = dto.Adapt<WorldEntity>();
+                return Result<WorldEntity>.Success(entity);
+            }
+            return Result<WorldEntity>.Failure(response.ErrorMessage);
+        }
+
+        public async UniTask<Result<WorldEntity>> UpdateWorldEntity(int id, WorldEntity worldEntity, CancellationToken token = default)
+        {
+            var json = JsonConvert.SerializeObject(worldEntity.Adapt<WorldEntityDto>());
+            var response = await _apiRequest.PatchRequest($"{WorldEntityEndpoint}/{id}", json, token);
+            if (response.IsSuccess)
+            {
+                var dto = JsonConvert.DeserializeObject<WorldEntityDto>(response.Value);
+                var entity = dto.Adapt<WorldEntity>();
+                return Result<WorldEntity>.Success(entity);
+            }
+            return Result<WorldEntity>.Failure(response.ErrorMessage);
+        }
+
+        public async UniTask<Result<Void>> DeleteWorldEntity(int id, CancellationToken token = default)
+        {
+            return await _apiRequest.DeleteRequest($"{WorldEntityEndpoint}/{id}", token);
+        }
+
+        public async UniTask<Result<List<Quest>>> GetQuests(CancellationToken token = default)
+        {
+            var response = await _apiRequest.GetRequest($"{QuestEndpoint}/mine", token);
+            if (response.IsSuccess)
+            {
+                var dtos = JsonConvert.DeserializeObject<List<QuestDto>>(response.Value);
+                var entities = dtos.Adapt<List<Quest>>();
+                return Result<List<Quest>>.Success(entities);
+            }
+            return Result<List<Quest>>.Failure(response.ErrorMessage);
+        }
+
+        public async UniTask<Result<Quest>> GetQuest(int id, CancellationToken token = default)
+        {
+            var response = await _apiRequest.GetRequest($"{QuestEndpoint}/{id}", token);
+            if (response.IsSuccess)
+            {
+                var dto = JsonConvert.DeserializeObject<QuestDto>(response.Value);
+                var entity = dto.Adapt<Quest>();
+                return Result<Quest>.Success(entity);
+            }
+            return Result<Quest>.Failure(response.ErrorMessage);
+        }
+
+        public async UniTask<Result<Quest>> CreateQuest(Quest quest, CancellationToken token = default)
+        {
+            var json = JsonConvert.SerializeObject(quest.Adapt<QuestDto>());
+            var response = await _apiRequest.PostRequest(QuestEndpoint, json, token);
+            if (response.IsSuccess)
+            {
+                var dto = JsonConvert.DeserializeObject<QuestDto>(response.Value);
+                var entity = dto.Adapt<Quest>();
+                return Result<Quest>.Success(entity);
+            }
+            return Result<Quest>.Failure(response.ErrorMessage);
+        }
+
+        public async UniTask<Result<Quest>> UpdateQuest(int id, Quest quest, CancellationToken token = default)
+        {
+            var json = JsonConvert.SerializeObject(quest.Adapt<QuestDto>());
+            var response = await _apiRequest.PatchRequest($"{QuestEndpoint}/{id}", json, token);
+            if (response.IsSuccess)
+            {
+                var dto = JsonConvert.DeserializeObject<QuestDto>(response.Value);
+                var entity = dto.Adapt<Quest>();
+                return Result<Quest>.Success(entity);
+            }
+            return Result<Quest>.Failure(response.ErrorMessage);
+        }
+
+        public async UniTask<Result<Void>> DeleteQuest(int id, CancellationToken token = default)
+        {
+            return await _apiRequest.DeleteRequest($"{QuestEndpoint}/{id}", token);
+        }
+
+        public async UniTask<Result<PlayerStats>> GetPlayerStats(int playerId, CancellationToken token = default)
+        {
+            var response = await _apiRequest.GetRequest($"{PlayerStatsEndpoint}/{playerId}", token);
+            if (response.IsSuccess)
+            {
+                var dto = JsonConvert.DeserializeObject<PlayerStatsDto>(response.Value);
+                var entity = dto.Adapt<PlayerStats>();
+                return Result<PlayerStats>.Success(entity);
+            }
+            return Result<PlayerStats>.Failure(response.ErrorMessage);
+        }
+
+        public async UniTask<Result<Void>> UpdatePlayerStat(int playerId, PlayerStats playerStats, CancellationToken token = default)
+        {
+
+            var json = JsonConvert.SerializeObject(playerStats.Adapt<PlayerStatsDto>());
+            return await _apiRequest.PostRequest($"{PlayerStatsEndpoint}/{playerId}", json, token);
+        }
+
+        public async UniTask<Result<Void>> UpdatePlayerStats(int playerId, IEnumerable<PlayerStats> playerStats, CancellationToken token = default)
+        {
+            var json = JsonConvert.SerializeObject(playerStats.Adapt<List<PlayerStatsDto>>());
+            return await _apiRequest.PostRequest($"{PlayerStatsEndpoint}/update-all/{playerId}", json, token);
+        }
+
+        [System.Serializable]
+        public class PaginatedM2PlayersResponse
+        {
+            public int page;
+            public int totalPages;
+            public int count;
+            public List<M2PlayerDto> data; // The actual M2Players array
+        }
+        public async UniTask<Result<List<M2Player>>> GetM2Players(CancellationToken token = default)
+        {
+            var response = await _apiRequest.GetRequest($"{M2PlayerEndpoint}/mine", token);
+            if (response.IsSuccess)
+            {
+                try
+                {
+                    // FIXED: Handle paginated response (same pattern as SimpleApiTester zones fix)
+                    var paginatedResponse = JsonConvert.DeserializeObject<PaginatedM2PlayersResponse>(response.Value);
+
+                    if (paginatedResponse?.data != null)
+                    {
+                        Debug.Log($"📊 GetM2Players paginated response: Page {paginatedResponse.page} of {paginatedResponse.totalPages}");
+                        Debug.Log($"📊 Found {paginatedResponse.data.Count} M2Players on this page, total: {paginatedResponse.count}");
+
+                        var entities = paginatedResponse.data.Adapt<List<M2Player>>();
+                        return Result<List<M2Player>>.Success(entities);
+                    }
+                }
+                catch (System.Exception parseEx)
+                {
+                    Debug.Log($"⚠️ Pagination parsing failed: {parseEx.Message}");
+
+                    // Fallback: Try direct array parsing (same as SimpleApiTester)
+                    try
+                    {
+                        var directArray = JsonConvert.DeserializeObject<List<M2PlayerDto>>(response.Value);
+                        if (directArray != null)
+                        {
+                            Debug.Log($"✅ GetM2Players succeeded (direct array)!");
+                            Debug.Log($"📊 Found {directArray.Count} M2Players");
+
+                            var entities = directArray.Adapt<List<M2Player>>();
+                            return Result<List<M2Player>>.Success(entities);
+                        }
+                    }
+                    catch (System.Exception arrayEx)
+                    {
+                        Debug.Log($"⚠️ Direct array parsing also failed: {arrayEx.Message}");
+                    }
+                }
+
+                // If both parsing methods fail, return the raw response for debugging
+                Debug.LogError($"❌ Could not parse M2Players response. Raw JSON: {response.Value}");
+                return Result<List<M2Player>>.Failure(EResultError.Unknown, "Failed to parse M2Players response");
+            }
+            return Result<List<M2Player>>.Failure(response.ErrorMessage);
+        }
+
+        public async UniTask<Result<M2Player>> GetMyM2Player(CancellationToken token = default)
+        {
+            var response = await _apiRequest.GetRequest($"{M2PlayerEndpoint}/mine", token);
+            if (response.IsSuccess)
+            {
+                var dto = JsonConvert.DeserializeObject<ArrayDto<M2PlayerDto>>(response.Value);
+                var entity = dto.Data[0].Adapt<M2Player>();
+                return Result<M2Player>.Success(entity);
+            }
+            return Result<M2Player>.Failure(response.ErrorMessage);
+        }
+
+        public async UniTask<Result<M2Player>> GetM2Player(int id, CancellationToken token = default)
+        {
+            var response = await _apiRequest.GetRequest($"{M2PlayerEndpoint}/{id}", token);
+            if (response.IsSuccess)
+            {
+                var dto = JsonConvert.DeserializeObject<M2PlayerDto>(response.Value);
+                var entity = dto.Adapt<M2Player>();
+                return Result<M2Player>.Success(entity);
+            }
+            return Result<M2Player>.Failure(response.ErrorMessage);
+        }
+
+        public async UniTask<Result<M2Player>> CreateM2Player(M2Player m2Player, CancellationToken token = default)
+        {
+            var json = JsonConvert.SerializeObject(m2Player.Adapt<M2PlayerDto>());
+            var response = await _apiRequest.PostRequest(M2PlayerEndpoint, json, token);
+            if (response.IsSuccess)
+            {
+                var dto = JsonConvert.DeserializeObject<M2PlayerDto>(response.Value);
+                var entity = dto.Adapt<M2Player>();
+                return Result<M2Player>.Success(entity);
+            }
+            return Result<M2Player>.Failure(response.ErrorMessage);
+        }
+
+        public async UniTask<Result<M2Player>> UpdateM2Player(int id, M2Player m2Player, CancellationToken token = default)
+        {
+            // FIX: Try different endpoint patterns based on the API documentation
+            var json = JsonConvert.SerializeObject(m2Player.Adapt<M2PlayerDto>());
+
+            // Try the documented endpoint first
+            var response = await _apiRequest.PatchRequest($"{M2PlayerEndpoint}/update-state/{id}", json, token);
+
+            if (!response.IsSuccess && response.ErrorMessage.Message?.Contains("Not Found") == true)
+            {
+                Debug.LogWarning("🔄 Trying alternative update endpoint...");
+
+                // Try alternative endpoints
+                var altResponse1 = await _apiRequest.PatchRequest($"{M2PlayerEndpoint}/update-state/{id}", json, token);
+                if (altResponse1.IsSuccess) response = altResponse1;
+
+                if (!response.IsSuccess)
+                {
+                    var altResponse2 = await _apiRequest.PatchRequest($"{M2PlayerEndpoint}/update-state/{id}", json, token);
+                    if (altResponse2.IsSuccess) response = altResponse2;
+                }
+            }
+
+            if (response.IsSuccess)
+            {
+                var dto = JsonConvert.DeserializeObject<M2PlayerDto>(response.Value);
+                var entity = dto.Adapt<M2Player>();
+                return Result<M2Player>.Success(entity);
+            }
+            return Result<M2Player>.Failure(response.ErrorMessage);
+        }
+
+        public async UniTask<Result<Void>> DeleteM2Player(int id, CancellationToken token = default)
+        {
+            return await _apiRequest.DeleteRequest($"{M2PlayerEndpoint}/{id}", token);
+        }
+
+        // NEW METHOD: Select M2Player (based on the API endpoint)
+        public async UniTask<Result<M2Player>> SelectM2Player(int id, CancellationToken token = default)
+        {
+            var response = await _apiRequest.PostRequest($"{M2PlayerEndpoint}/{id}/select", "", token);
+            if (response.IsSuccess)
+            {
+                var dto = JsonConvert.DeserializeObject<M2PlayerDto>(response.Value);
+                var entity = dto.Adapt<M2Player>();
+                return Result<M2Player>.Success(entity);
+            }
+            return Result<M2Player>.Failure(response.ErrorMessage);
+        }
+        #endregion
     }
 
     public struct OnUserLogin
@@ -1195,3 +1569,5 @@ namespace BalootApi
         }
     }
 }
+
+

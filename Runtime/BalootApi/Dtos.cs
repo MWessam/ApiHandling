@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -455,6 +455,79 @@ namespace BalootApi
         public int MaxWinnersCount;
     }
 
+
+    #endregion
+
+    #region MMO
+    [JsonObject(NamingStrategyType = typeof(SnakeCaseNamingStrategy))]
+    public struct ZoneDto
+    {
+        public int Id;
+        public string Name;
+        public string Kingdom;
+        public int ChannelId;
+        public string Type;
+        public DateTime StartTimestamp;
+        public int WaitTime;
+        public DateTime EndTimestamp;
+        public string Status;
+        public int CurrentTimer;
+        public DateTime TimerStart;
+        public DateTime TimerEnd;
+    }
+
+    [JsonObject(NamingStrategyType = typeof(SnakeCaseNamingStrategy))]
+    public struct WorldEntityDto
+    {
+        public int Id;
+        public string Name;
+        public int Level;
+        public float PosX;
+        public float PosY;
+        public float PosZ;
+        public int ZoneId;
+        public string Type;
+        public string Status;
+        public DateTime StatusChangeTimestamp;
+    }
+
+    [JsonObject(NamingStrategyType = typeof(SnakeCaseNamingStrategy))]
+    public struct QuestDto
+    {
+        public int Id;
+        public string Name;
+        public string QuestGiver;
+        public int QuestOwnerPlayerId;
+        public string QuestObjectivesJson;
+        public string Status;
+    }
+    
+    [JsonObject(NamingStrategyType = typeof(SnakeCaseNamingStrategy))]
+    public struct PlayerStatsDto
+    {
+        [JsonProperty("playerId")]
+        public int PlayerId;
+        public string Type;
+        public int MaxValue;
+        public int LatestValue;
+        public int Level;
+    }
+    
+    [JsonObject(NamingStrategyType = typeof(SnakeCaseNamingStrategy))]
+    public struct M2PlayerDto
+    {
+        public int Id;
+        public int UserId;
+        public int CurrentZoneId;
+        public float LatestPosX;
+        public float LatestPosY;
+        public float LatestPosZ;
+        public object CharacterTypeJson;
+        [JsonProperty("playerStats")]
+        public List<PlayerStatsDto> PlayerStats;
+        public List<QuestDto> Quests;
+        public ZoneDto CurrentZone;
+    }
 
     #endregion
 }

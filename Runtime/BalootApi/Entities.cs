@@ -1,8 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Serialization;
+using System.Runtime.Serialization;
 
 namespace BalootApi
 {
@@ -509,4 +510,75 @@ public enum ENationalityType
     Zambia = 195,
     Zimbabwe = 196
 }
+
+    #region MMO
+    [Serializable]
+    public class Zone
+    {
+        public int Id;
+        public string Name;
+        public string Kingdom;
+        public int ChannelId;
+        public string Type;
+        public DateTime StartTimestamp;
+        public int WaitTime;
+        public DateTime EndTimestamp;
+        public string Status;
+        public int CurrentTimer;
+        public DateTime TimerStart;
+        public DateTime TimerEnd;
+    }
+
+    [Serializable]
+    public class WorldEntity
+    {
+        public int Id;
+        public string Name;
+        public int Level;
+        public float PosX;
+        public float PosY;
+        public float PosZ;
+        public int ZoneId;
+        public string Type;
+        public string Status;
+        public DateTime StatusChangeTimestamp;
+    }
+
+    [Serializable]
+    public class Quest
+    {
+        public int Id;
+        public string Name;
+        public string QuestGiver;
+        public int QuestOwnerPlayerId;
+        public object QuestObjectivesJson;
+        public string Status;
+    }
+    
+    [Serializable]
+    public class PlayerStats
+    {
+        public int PlayerId;
+        public string Type;
+        public int MaxValue;
+        public int LatestValue;
+        public int Level;
+    }
+    
+    [Serializable]
+    public class M2Player
+    {
+        public int Id;
+        public int UserId;
+        public int CurrentZoneId;
+        public float LatestPosX;
+        public float LatestPosY;
+        public float LatestPosZ;
+        public object CharacterTypeJson;
+        public List<PlayerStats> PlayerStats;
+        public List<Quest> Quests;
+        public Zone CurrentZone;
+    }
+
+    #endregion
 }
